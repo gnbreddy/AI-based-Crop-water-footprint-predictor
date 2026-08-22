@@ -1,10 +1,12 @@
-earthengine-api
+Flask
+gunicorn
 pandas
 numpy
 lightgbm
-folium
-joblib
-matplotlib
 scikit-learn
 scipy
+joblib
+matplotlib
+folium
+earthengine-api
 pytest
