@@ -1,0 +1,51 @@
+# ==============================================================================
+# Git Ignore Configuration: Crop Water Footprint (CWF) Machine Learning Pipeline
+# ==============================================================================
+
+# --- Personal Credentials, API Keys, and Environment Secrets ---
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+*.p12
+*service_account*.json
+*credentials*.json
+*client_secret*.json
+google_credentials/
+.gdrive/
+
+# --- Python & Bytecode Caches ---
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.pytest_cache/
+.coverage
+htmlcov/
+.tox/
+
+# --- Virtual Environments ---
+.venv/
+venv/
+ENV/
+env/
+env.bak/
+venv.bak/
+
+# --- Temporary Test Data & Output Folders ---
+test_data_tmp/
+test_output_tmp/
+
+# --- IDE, Editor & OS Configuration Files ---
+.vscode/
+.idea/
+*.sublime-project
+*.sublime-workspace
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# --- Large Temporary / Download Dumps ---
+*.log
+scratch/

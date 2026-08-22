@@ -1,0 +1,10 @@
+earthengine-api
+pandas
+numpy
+lightgbm
+folium
+joblib
+matplotlib
+scikit-learn
+scipy
+pytest
