@@ -139,4 +139,127 @@ def test_visualizer_outputs():
 
     map_html = os.path.join(TEST_OUTPUT_DIR, 'test_map.html')
     generate_footprint_map(2023, save_path=map_html)
-    assert os.path.exists(map_html), "Folium map HTML file was not created."
+    assert os.path.exists(map_html), "Interactive map HTML was not created."
+
+def test_universal_engine():
+    """Test location-agnostic universal CWF engine across global climate regimes."""
+    from universal_engine import UniversalCropWaterFootprintEngine
+    from schemas import UniversalIngestionRequest, AtmosphericPayload, SoilPayload, CropPayload
+    from normalization_engine import PhysicalNormalizationEngine
+    from crop_repository import CropSoilRepository
+
+    # 1. Test Physical Normalization Engine
+    norm = PhysicalNormalizationEngine()
+    vpd = norm.vapor_pressure_deficit(temp_c=30.0, rh_pct=40.0)
+    assert vpd > 0.0, "VPD should be positive for RH < 100%."
+    
+    ssi = norm.soil_water_stress_index(volumetric_moisture=0.20, field_capacity=0.30, wilting_point=0.10)
+    assert np.isclose(ssi, 0.50), f"Expected SSI = 0.50, got {ssi}"
+
+    r_a = norm.extraterrestrial_radiation(latitude_deg=20.0, day_of_year=172)
+    assert r_a > 10.0, "Extraterrestrial radiation out of expected physical bounds."
+
+    # 2. Test Dynamic Crop & Soil Repository
+    repo = CropSoilRepository()
+    wheat_prof = repo.get_crop_profile('wheat', growth_stage='mid')
+    assert wheat_prof['kc_selected'] == 1.15, "Wheat mid-season Kc mismatch."
+    assert wheat_prof['yield_baseline_ton_ha'] > 0, "Yield baseline must be positive."
+
+    # Test dynamic custom crop registration
+    reg_success = repo.register_custom_crop(
+        crop_key='quinoa', name='Highland Quinoa',
+        kc_ini=0.30, kc_mid=1.00, kc_end=0.45, kc_avg=0.75,
+        yield_baseline_ton_ha=2.5, root_depth_m=0.8
+    )
+    assert reg_success, "Failed to dynamically register custom crop."
+    quinoa_prof = repo.get_crop_profile('quinoa')
+    assert quinoa_prof['name'] == 'Highland Quinoa'
+
+    # 3. Test Universal Ingestion Pipeline via Pydantic Payload
+    engine = UniversalCropWaterFootprintEngine()
+    sample_request = UniversalIngestionRequest(
+        location_label="Nile Delta, Egypt",
+        atmosphere=AtmosphericPayload(
+            temp_c=36.0, solar_rad_mj=25.0, rh_pct=30.0,
+            wind_speed_ms=4.0, precip_mm=0.0, elevation_m=15.0, latitude_deg=30.5
+        ),
+        soil=SoilPayload(soil_type='sandy_loam', volumetric_moisture=0.12),
+        crop=CropPayload(crop_type='cotton', growth_stage='mid')
+    )
+    resp = engine.process_payload(sample_request)
+    assert resp.status == "success", "Universal payload processing failed."
+    assert resp.crop_water_footprint_m3_ton.total_water_footprint_m3_ton > 0
+    assert resp.crop_water_footprint_m3_ton.blue_water_footprint_m3_ton > 0
+    assert resp.thermodynamic_diagnostics.vapor_pressure_deficit_kpa > 0
+
+def test_fastapi_gateway():
+    """Test FastAPI Gateway endpoints, validation, session injection, and audit logging."""
+    from fastapi.testclient import TestClient
+    from api_gateway import app
+
+    client = TestClient(app)
+
+    # 1. Health check endpoint
+    h_resp = client.get("/health")
+    assert h_resp.status_code == 200
+    assert h_resp.json()["status"] == "healthy"
+    assert h_resp.json()["database"] == "connected"
+
+    # 2. List crops and soils
+    c_resp = client.get("/api/v1/crops")
+    assert c_resp.status_code == 200
+    assert len(c_resp.json()) > 0
+
+    s_resp = client.get("/api/v1/soils")
+    assert s_resp.status_code == 200
+    assert len(s_resp.json()) > 0
+
+    # 3. Predict CWF via POST /api/v1/cwf/predict
+    payload = {
+        "location_label": "Imperial Valley, California",
+        "atmosphere": {
+            "temp_c": 38.0,
+            "solar_rad_mj": 26.5,
+            "rh_pct": 20.0,
+            "wind_speed_ms": 4.2,
+            "precip_mm": 0.0,
+            "elevation_m": -15.0,
+            "latitude_deg": 32.8,
+            "day_of_year": 190,
+            "hour_of_day": 13
+        },
+        "soil": {
+            "soil_type": "sandy_loam",
+            "volumetric_moisture": 0.10
+        },
+        "crop": {
+            "crop_type": "cotton",
+            "growth_stage": "mid"
+        }
+    }
+
+    pred_resp = client.post("/api/v1/cwf/predict", json=payload)
+    assert pred_resp.status_code == 200
+    data = pred_resp.json()
+    assert data["status"] == "success"
+    assert data["location_label"] == "Imperial Valley, California"
+    assert data["crop_water_footprint_m3_ton"]["total_water_footprint_m3_ton"] > 0
+    assert data["crop_water_footprint_m3_ton"]["blue_water_footprint_m3_ton"] > 0
+
+    # 4. Check audit log in database via GET /api/v1/records
+    rec_resp = client.get("/api/v1/records?limit=5")
+    assert rec_resp.status_code == 200
+    assert len(rec_resp.json()) > 0
+    assert rec_resp.json()[0]["crop_key"] == "cotton"
+
+def test_streaming_pipeline():
+    """Test asynchronous high-throughput telemetry ingestion and batch processing."""
+    import asyncio
+    from streaming_pipeline import run_streaming_benchmark
+
+    res = asyncio.run(run_streaming_benchmark(num_records=50, batch_size=25))
+    assert res['total_records'] == 50
+    assert res['throughput_records_per_sec'] > 0
+
+
+

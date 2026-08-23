@@ -1,7 +1,8 @@
 # Crop Water Footprint (CWF) ML Project: Complete Conversation & Architectural Archive
 
-**Date:** August 22, 2026  
+**Date:** August 23, 2026  
 **Project Location:** `c:\Users\gopav\Desktop\22_0826`  
+**GitHub Repository:** `https://github.com/gnbreddy/AI-based-Crop-water-footprint-predictor.git`  
 **Conversation ID:** `f8d2fce9-a297-4a1e-804b-d6a0056d8e41`
 
 ---
@@ -16,7 +17,24 @@ This project implements an agro-hydrological Machine Learning infrastructure to 
 
 ```
 22_0826/
-├── config.py                 # Central configuration, locked-in optimal parameters & physical CWF constants
+├── .gitignore                # Security filter protecting credentials, keys, and caches
+├── .dockerignore             # Optimizes Docker build contexts
+├── .env.example              # Template for configuring GEE project ID & database credentials
+├── README.md                 # Public GitHub project documentation and quickstart
+├── WALKTHROUGH.md            # Detailed 36-year mathematical and visual report
+├── docker-compose.yml        # Multi-container orchestration (PostgreSQL + FastAPI + Worker + React Nginx)
+├── Dockerfile.api            # Production container for FastAPI & LightGBM Machine Learning engine
+├── Dockerfile.worker         # Production container for Asynchronous Streaming & Batch Ingestion
+├── Dockerfile.frontend       # Multi-stage container for React 18 + Vite + Nginx Reverse Proxy
+├── config.py                 # Central configuration, locked-in parameters & physical constants
+├── schemas.py                # Pydantic data schemas for all 4 physical pillars & validation
+├── db_models.py              # SQLAlchemy ORM models, audit tables, and auto-seeding
+├── normalization_engine.py   # Decoupled physics translation layer (VPD, SSI, Rs/Ra, gamma)
+├── crop_repository.py        # Plug-and-play dynamic crop & soil database repository
+├── universal_engine.py       # Universal, location-agnostic CWF engine for any coordinates on Earth
+├── api_gateway.py            # Production FastAPI gateway with dependency injection & audit logging
+├── streaming_pipeline.py     # High-throughput asynchronous streaming & bulk batch processor
+├── worker_entrypoint.py      # Graceful consumer worker entrypoint for container execution
 ├── extractor.py              # GEE authentication, 6-hourly extraction & direct local / Drive export
 ├── compiler.py               # Ingestion of multi-decade CSVs, cleaning, interpolation, and lag/rolling creation
 ├── trainer.py                # 25-epoch cyclic expanding window validation, locked production model trainer
@@ -26,45 +44,52 @@ This project implements an agro-hydrological Machine Learning infrastructure to 
 ├── calibrator.py             # FAO-56 / WFN Crop Water Footprint calculator and L-BFGS-B coefficient optimizer
 ├── visualizer.py             # Feature importance charts, learning curves, CWF partitioning plots, Folium maps
 ├── mock_data_generator.py    # Multi-decade (2000-2025) synthetic 6-hourly data generator for offline testing
-├── test_pipeline.py          # Automated pytest test suite covering all pipeline stages & CSV persistence
+├── test_pipeline.py          # Automated pytest test suite (7 passing test suites)
 ├── main.py                   # Unified CLI orchestrator with support for all execution modes
-├── requirements.txt          # Pinned project dependencies
+├── app.py                    # Flask server with universal prediction endpoints
+├── requirements.txt          # Pinned project dependencies (FastAPI, Pydantic, SQLAlchemy, LightGBM, psycopg2)
+├── .github/workflows/
+│   └── ci.yml                # Automated GitHub Actions CI/CD test and build workflow
+├── frontend/                 # Modern React 18 + Vite + Tailwind CSS + Leaflet Dashboard
+│   ├── package.json
+│   ├── vite.config.js
+│   ├── tailwind.config.js
+│   ├── nginx.conf            # High-performance Nginx reverse proxy configuration
+│   ├── index.html
+│   └── src/
+│       ├── api/cwfApi.js
+│       ├── components/
+│       │   ├── Header.jsx
+│       │   ├── SimulationForm.jsx
+│       │   ├── CwfMetricsCard.jsx
+│       │   ├── FootprintChart.jsx
+│       │   ├── GeospatialMap.jsx
+│       │   └── AuditTable.jsx
+│       ├── App.jsx
+│       ├── main.jsx
+│       └── index.css
 ├── data/                     # Ingested, engineered, comparison, hindcast, and epoch datasets
-│   ├── master_engineered_dataset.csv
-│   ├── final_locked_feature_weights.csv
-│   ├── annual_accuracy_1990_1999.csv
-│   ├── verified_comparison_1990_1999.csv
-│   ├── annual_cwf_summary_1990_1999.csv
-│   ├── predicted_cwf_1990_1999_timeseries.csv
-│   ├── annual_prediction_accuracy_comparison.csv
-│   ├── prediction_comparison_2000.csv ... prediction_comparison_2025.csv
-│   └── calibrated_cwf_timeseries.csv
+│   ├── universal_agri.db     # SQLite/PostgreSQL database for dynamic crops, soils, and audit records
+│   └── ...
 └── outputs/                  # Exported models, visualizations, and maps
     ├── final_production_model.pkl
-    ├── best_lgbm_model.pkl
-    ├── accuracy_comparison_1990_1999.png
-    ├── cwf_prediction_1990_1999.png
-    ├── annual_accuracy_comparison.png
-    ├── learning_curve_epochs.png
-    ├── feature_importance.png
-    └── water_footprint_breakdown.png
+    └── ...
 ```
 
 ---
 
-## 3. Complete 36-Year Accuracy Summary (1990–2025)
+## 3. Environment Parity & Containerization Architecture
 
-| Period | Evaluation Method | Sample Count | $R^2$ Score (%) | RMSE ($mm$) | MAE ($mm$) | Pearson $r$ |
-| :--- | :--- | :---: | :---: | :---: | :---: | :---: |
-| **1990–1999** | Blind Pre-MODIS Hindcast | 14,608 | **98.33%** | 0.2123 | 0.1687 | 0.9917 |
-| **2000–2025** | Fixed-Model Multi-Decade Evaluation | 37,984 | **98.64%** | 0.1897 | 0.1506 | 0.9932 |
-| **1990–2025** | **Total 36-Year Pipeline** | **52,592** | **98.55%** | **0.1963** | **0.1557** | **0.9928** |
+| Service | Technology | Port | Role |
+| :--- | :--- | :---: | :--- |
+| **`db`** | PostgreSQL 16 Alpine | `5432` | Enterprise relational database with persistent storage volume |
+| **`api`** | FastAPI + Python 3.12-slim | `8000` | Universal prediction gateway, Pydantic validation, LightGBM ML inference |
+| **`worker`** | Python 3.12-slim | — | Asynchronous background streaming consumer & bulk database transaction worker |
+| **`frontend`** | React 18 + Vite + Nginx | `3000` (`:80`) | Interactive client dashboard with automated reverse proxy routing to `/api/` |
 
 ---
 
 ## 4. Verification Status
-All unit and integration tests are verified and passing (`pytest` clean).
-- `test_compiler` : **PASSED**
-- `test_trainer_execution` : **PASSED**
-- `test_calibrator_computation_and_optimization` : **PASSED**
-- `test_visualizer_outputs` : **PASSED**
+- **Backend Test Suite (`pytest`)**: 7/7 test suites passing 100%.
+- **Frontend Production Build (`vite build`)**: Clean build with 2,481 modules transformed into production assets.
+- **CI/CD Workflow (`.github/workflows/ci.yml`)**: Automated backend pytest + frontend compilation pipeline.

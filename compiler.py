@@ -16,6 +16,12 @@ def compile_datasets(data_dir=LOCAL_DATA_PATH):
     all_files = glob.glob(pattern)
     
     if not all_files:
+        master_file = os.path.join(data_dir, "master_engineered_dataset.csv")
+        if os.path.exists(master_file):
+            print(f"[Compiler] Loading cached master dataset from: {master_file}")
+            df = pd.read_csv(master_file)
+            df['datetime'] = pd.to_datetime(df['datetime'])
+            return df
         print(f"[Compiler] No files found matching {pattern}.")
         print("[Compiler] Please wait for GEE tasks to finish exporting and place CSVs into the local data directory, or run mock_data_generator.py.")
         return None

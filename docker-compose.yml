@@ -1,0 +1,87 @@
+services:
+  # ============================================================================
+  # 1. PostgreSQL 16 Enterprise Database
+  # ============================================================================
+  db:
+    image: postgres:16-alpine
+    container_name: aquacrop_postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: aquacrop_db
+      POSTGRES_USER: aquacrop_user
+      POSTGRES_PASSWORD: aquacrop_secure_password
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U aquacrop_user -d aquacrop_db"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - aquacrop_net
+
+  # ============================================================================
+  # 2. FastAPI & LightGBM Machine Learning Gateway
+  # ============================================================================
+  api:
+    build:
+      context: .
+      dockerfile: Dockerfile.api
+    container_name: aquacrop_api
+    restart: unless-stopped
+    environment:
+      - DATABASE_URL=postgresql://aquacrop_user:aquacrop_secure_password@db:5432/aquacrop_db
+    ports:
+      - "8000:8000"
+    depends_on:
+      db:
+        condition: service_healthy
+    networks:
+      - aquacrop_net
+
+  # ============================================================================
+  # 3. Asynchronous Streaming & Batch Ingestion Worker
+  # ============================================================================
+  worker:
+    build:
+      context: .
+      dockerfile: Dockerfile.worker
+    container_name: aquacrop_worker
+    restart: unless-stopped
+    environment:
+      - DATABASE_URL=postgresql://aquacrop_user:aquacrop_secure_password@db:5432/aquacrop_db
+      - STREAM_BATCH_SIZE=500
+    depends_on:
+      db:
+        condition: service_healthy
+    networks:
+      - aquacrop_net
+
+  # ============================================================================
+  # 4. React 18 & Nginx Reverse Proxy Frontend
+  # ============================================================================
+  frontend:
+    build:
+      context: .
+      dockerfile: Dockerfile.frontend
+    container_name: aquacrop_frontend
+    restart: unless-stopped
+    ports:
+      - "3000:80"
+    depends_on:
+      - api
+    networks:
+      - aquacrop_net
+
+# ==============================================================================
+# Persistent Storage Volumes & Private Bridge Network
+# ==============================================================================
+volumes:
+  postgres_data:
+    driver: local
+
+networks:
+  aquacrop_net:
+    driver: bridge

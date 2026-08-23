@@ -157,7 +157,7 @@
           <!-- Slider 1: Temperature Rise -->
           <div class="slider-box">
             <div class="slider-header">
-              <span class="slider-title">🌡️ Global Temp Anomaly ($\Delta T$ by 2050)</span>
+              <span class="slider-title">🌡️ Global Temp Anomaly (Δ<i>T</i> Scenario)</span>
               <span class="slider-val" id="val-temp">+2.0 °C</span>
             </div>
             <input type="range" id="slider-temp" min="0.0" max="5.0" step="0.1" value="2.0" class="custom-slider">
@@ -167,7 +167,7 @@
           <!-- Slider 2: Solar Radiation Shift -->
           <div class="slider-box">
             <div class="slider-header">
-              <span class="slider-title">☀️ Solar Radiation Forcing ($\Delta$ Solar)</span>
+              <span class="slider-title">☀️ Solar Radiation Forcing (ΔSolar)</span>
               <span class="slider-val" id="val-solar">+5 %</span>
             </div>
             <input type="range" id="slider-solar" min="-15" max="25" step="1" value="5" class="custom-slider">
@@ -187,7 +187,7 @@
           <!-- Slider 4: Effective Rainfall Retention Factor -->
           <div class="slider-box">
             <div class="slider-header">
-              <span class="slider-title">💧 Rainfall Infiltration Factor ($\alpha$)</span>
+              <span class="slider-title">💧 Rainfall Infiltration Factor (α)</span>
               <span class="slider-val" id="val-alpha">0.90</span>
             </div>
             <input type="range" id="slider-alpha" min="0.60" max="0.98" step="0.01" value="0.90" class="custom-slider">
@@ -197,7 +197,7 @@
           <!-- Slider 5: Crop Yield Adaptation -->
           <div class="slider-box">
             <div class="slider-header">
-              <span class="slider-title">🌾 Crop Yield Target ($Y$ in ton/ha)</span>
+              <span class="slider-title">🌾 Crop Yield Target (<i>Y</i> in ton/ha)</span>
               <span class="slider-val" id="val-yield">150 ton/ha</span>
             </div>
             <input type="range" id="slider-yield" min="80" max="250" step="5" value="150" class="custom-slider">
@@ -207,7 +207,7 @@
       </div>
     </section>
 
-    <!-- SECTION 2: 30-Year Variance Analysis (1990 -> 2020 -> 2050) -->
+    <!-- SECTION 2: 30-Year Variance Analysis (1990 -> 2020 -> Scenario Projection) -->
     <section id="variance" class="section-block">
       <div class="section-header">
         <div>
@@ -225,7 +225,7 @@
           <h3 class="v-title">1. Thermal Vapor Deficit Scaling</h3>
           <div class="v-fold-badge">1.12x Multiplier per 30 Years</div>
           <p class="v-text">
-            Between 1990 and 2020, average ambient temperatures rose by $+1.1^\circ\text{C}$ to $+1.4^\circ\text{C}$. This non-linearly increases the <strong>Vapor Pressure Deficit (VPD)</strong> of the atmosphere by $\approx 7.2\%$ per $1^\circ\text{C}$ (Clausius-Clapeyron equation), accelerating potential evaporation demand.
+            Between 1990 and 2020, average ambient temperatures rose by +1.1 °C to +1.4 °C. This non-linearly increases the <strong>Vapor Pressure Deficit (VPD)</strong> of the atmosphere by ≈ 7.2% per 1 °C (Clausius-Clapeyron equation), accelerating potential evaporation demand.
           </p>
         </div>
 
@@ -234,7 +234,7 @@
           <h3 class="v-title">2. Precipitation Volatility & Runoff Shift</h3>
           <div class="v-fold-badge">1.28x Irrigation Demand Shift</div>
           <p class="v-text">
-            While total annual precipitation may fluctuate moderately ($\pm 8\%$), rainfall intensity increases into shorter, violent bursts. Consequently, the effective rainfall retention factor ($\alpha$) declines from $0.95 \rightarrow 0.86$, forcing farmers to pump <strong>$20-28\%$ more Blue Irrigation Water</strong>.
+            While total annual precipitation may fluctuate moderately (±8%), rainfall intensity increases into shorter, violent bursts. Consequently, the effective rainfall retention factor (α) declines from 0.95 → 0.86, forcing farmers to pump <strong>20–28% more Blue Irrigation Water</strong>.
           </p>
         </div>
 
@@ -250,16 +250,16 @@
         <div class="glass-card variance-card">
           <div class="v-icon">🧬</div>
           <h3 class="v-title">4. Agronomic Yield Counter-Balance</h3>
-          <div class="v-fold-badge">Yield Mitigates CWF ($m^3/\text{ton}$)</div>
+          <div class="v-fold-badge">Yield Mitigates CWF (m³/ton)</div>
           <p class="v-text">
-            Since $\text{CWF} = \frac{10 \times ET}{Yield}$, agricultural technological improvements and genetic breeding that raise yield ($Y$) from $90 \rightarrow 150\text{ ton/ha}$ effectively reduce water footprint per ton of food produced, offsetting climate heating.
+            Since CWF = (10 × ET) / Yield, agricultural technological improvements and genetic breeding that raise yield (<i>Y</i>) from 90 → 150 ton/ha effectively reduce water footprint per ton of food produced, offsetting climate heating.
           </p>
         </div>
       </div>
 
       <!-- 30-Year Comparison Matrix Table -->
       <div class="glass-card matrix-card">
-        <h3 class="card-title">30-Year Attribute Variance Matrix (1990 vs 2020 vs 2050 Projection)</h3>
+        <h3 class="card-title">30-Year Attribute Variance Matrix (1990 vs 2020 vs Future Projection)</h3>
         <div class="table-responsive">
           <table class="data-table">
             <thead>
@@ -268,7 +268,7 @@
                 <th>1990 Baseline</th>
                 <th>2020 Validated</th>
                 <th>30-Yr Variance (1990→2020)</th>
-                <th>2050 Projected (60-Yr)</th>
+                <th>Forward Projected</th>
                 <th>Physical Impact on CWF</th>
               </tr>
             </thead>
@@ -282,7 +282,7 @@
                 <td>Increases potential ET and plant transpiration demand</td>
               </tr>
               <tr>
-                <td><strong>Annual Evapotranspiration ($ET$)</strong></td>
+                <td><strong>Annual Evapotranspiration (ET)</strong></td>
                 <td>6,649 mm</td>
                 <td>6,662 mm</td>
                 <td><span class="badge-tag info">+0.2% (Stable)</span></td>
@@ -290,15 +290,15 @@
                 <td>Higher solar forcing + thermal VPD expand water loss</td>
               </tr>
               <tr>
-                <td><strong>Effective Rain Factor ($\alpha$)</strong></td>
+                <td><strong>Effective Rain Factor (α)</strong></td>
                 <td>0.950</td>
                 <td>0.950</td>
                 <td><span class="badge-tag info">Unchanged</span></td>
                 <td>0.880 (-7.4%)</td>
-                <td>Converts Green rain into surface runoff $\rightarrow$ Higher Blue CWF</td>
+                <td>Converts Green rain into surface runoff → Higher Blue CWF</td>
               </tr>
               <tr>
-                <td><strong>Green Water Footprint ($GWF$)</strong></td>
+                <td><strong>Green Water Footprint (GWF)</strong></td>
                 <td>38.0 m³/ton</td>
                 <td>38.6 m³/ton</td>
                 <td><span class="badge-tag info">+1.6% (1.02x)</span></td>
@@ -306,7 +306,7 @@
                 <td>Rainfall contribution shrinks if monsoons become erratic</td>
               </tr>
               <tr>
-                <td><strong>Blue Water Footprint ($BWF$)</strong></td>
+                <td><strong>Blue Water Footprint (BWF)</strong></td>
                 <td>183.6 m³/ton</td>
                 <td>183.8 m³/ton</td>
                 <td><span class="badge-tag info">+0.1% (1.00x)</span></td>
@@ -351,7 +351,7 @@
           <h3 class="exp-year-title" id="exp-year-display">Year 2015</h3>
           <div class="exp-stats-grid">
             <div class="exp-stat-item">
-              <span class="exp-stat-lbl">Accuracy ($R^2$ Score)</span>
+              <span class="exp-stat-lbl">Accuracy (R² Score)</span>
               <span class="exp-stat-val text-success" id="exp-r2">98.70%</span>
             </div>
             <div class="exp-stat-item">
@@ -363,7 +363,7 @@
               <span class="exp-stat-val" id="exp-mae">0.1497 mm</span>
             </div>
             <div class="exp-stat-item">
-              <span class="exp-stat-lbl">Pearson Correlation ($r$)</span>
+              <span class="exp-stat-lbl">Pearson Correlation (r)</span>
               <span class="exp-stat-val" id="exp-corr">0.9935</span>
             </div>
             <div class="exp-stat-item">

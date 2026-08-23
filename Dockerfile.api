@@ -1,0 +1,42 @@
+# ==============================================================================
+# Production FastAPI & LightGBM Machine Learning Backend
+# ==============================================================================
+FROM python:3.12-slim AS base
+
+# Prevent Python from writing .pyc files and buffer stdout/stderr
+ENV PYTHONDONTWRITEBYTECODE=1 \
+    PYTHONUNBUFFERED=1 \
+    DEBIAN_FRONTEND=noninteractive
+
+WORKDIR /app
+
+# Install system dependencies needed for LightGBM and spatial calculations
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    build-essential \
+    libgomp1 \
+    curl \
+    && rm -rf /var/lib/apt/lists/*
+
+# Install Python dependencies
+COPY requirements.txt .
+RUN pip install --no-cache-dir --upgrade pip && \
+    pip install --no-cache-dir -r requirements.txt
+
+# Copy backend source code and locked ML model artifacts
+COPY schemas.py db_models.py normalization_engine.py crop_repository.py universal_engine.py api_gateway.py streaming_pipeline.py config.py ./
+COPY data/ ./data/
+COPY outputs/ ./outputs/
+
+# Create non-root user for container security
+RUN useradd -m -u 1001 appuser && \
+    chown -R appuser:appuser /app
+USER appuser
+
+# Healthcheck to verify API readiness
+HEALTHCHECK --interval=30s --timeout=5s --start-period=10s --retries=3 \
+    CMD curl -f http://localhost:8000/health || exit 1
+
+EXPOSE 8000
+
+# Run FastAPI via production Uvicorn server
+CMD ["uvicorn", "api_gateway:app", "--host", "0.0.0.0", "--port", "8000", "--workers", "2"]

@@ -1,5 +1,11 @@
+fastapi
+uvicorn
+httpx
 Flask
 gunicorn
+pydantic
+sqlalchemy
+psycopg2-binary
 pandas
 numpy
 lightgbm

@@ -49,3 +49,13 @@ desktop.ini
 # --- Large Temporary / Download Dumps ---
 *.log
 scratch/
+*.db-wal
+*.db-shm
+*.db-journal
+
+# --- Node / Frontend Build Directories ---
+node_modules/
+frontend/node_modules/
+frontend/dist/
+.vite/
+frontend/.vite/
