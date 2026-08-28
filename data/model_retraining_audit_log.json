@@ -1,0 +1,58 @@
+[
+  {
+    "timestamp": "2026-08-28T05:17:06.827550+00:00",
+    "training_duration_seconds": 31.24,
+    "total_training_records": 38484,
+    "cv_r2_score": 0.9828,
+    "global_r2_accuracy": 0.9888,
+    "global_rmse_mm": 0.1724,
+    "global_mae_mm": 0.1364,
+    "optimal_hyperparameters": {
+      "subsample": 0.7,
+      "reg_lambda": 0.1,
+      "reg_alpha": 0.5,
+      "num_leaves": 63,
+      "n_estimators": 600,
+      "min_child_samples": 10,
+      "max_depth": 6,
+      "learning_rate": 0.05,
+      "colsample_bytree": 0.7
+    },
+    "top_features": {
+      "solar_rad": 42.95,
+      "soil_moisture_roll24h": 18.0,
+      "soil_moisture": 16.71,
+      "cos_hour": 10.79,
+      "sin_hour": 4.27
+    },
+    "promoted_to_production": true
+  },
+  {
+    "timestamp": "2026-08-28T05:17:56.157027+00:00",
+    "training_duration_seconds": 2.1,
+    "total_training_records": 200,
+    "cv_r2_score": 0.9252,
+    "global_r2_accuracy": 0.9937,
+    "global_rmse_mm": 0.1228,
+    "global_mae_mm": 0.0726,
+    "optimal_hyperparameters": {
+      "subsample": 0.95,
+      "reg_lambda": 1.0,
+      "reg_alpha": 0.1,
+      "num_leaves": 127,
+      "n_estimators": 150,
+      "min_child_samples": 10,
+      "max_depth": 10,
+      "learning_rate": 0.05,
+      "colsample_bytree": 0.7
+    },
+    "top_features": {
+      "solar_rad": 43.71,
+      "soil_moisture_roll24h": 14.41,
+      "soil_moisture": 12.44,
+      "cos_hour": 9.87,
+      "soil_moisture_lag1": 5.29
+    },
+    "promoted_to_production": false
+  }
+]

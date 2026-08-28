@@ -54,13 +54,24 @@ class UniversalCropWaterFootprintEngine:
         
         self.norm = PhysicalNormalizationEngine()
         self.repo = CropSoilRepository()
+        self.model_path = model_path
         self.model = None
+        self.load_production_model()
 
-        if os.path.exists(model_path):
+    def load_production_model(self):
+        """Loads or hot-reloads the active production LightGBM model from disk."""
+        if os.path.exists(self.model_path):
             try:
-                self.model = joblib.load(model_path)
+                self.model = joblib.load(self.model_path)
+                print(f"[Universal Engine] Successfully loaded production model from {self.model_path}")
             except Exception as e:
                 print(f"[Universal Engine] Notice: Running with analytical FAO-56 engine ({e})")
+                self.model = None
+
+    def reload_model(self):
+        """Hot-reloads the newly trained model dynamically without server restart."""
+        self.load_production_model()
+        return self.model is not None
 
     def process_payload(self, request: UniversalIngestionRequest) -> UniversalPredictionResponse:
         """

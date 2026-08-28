@@ -73,35 +73,50 @@ FEATURES = BASE_FEATURES + LAG_FEATURES + ROLLING_FEATURES + CYCLICAL_FEATURES
 TARGET = 'modis_et_mm'
 
 # ==============================================================================
-# Final Locked-in Optimal LightGBM Hyperparameters
-# (Derived from 25-Epoch Cyclic Expanding Window Empirical Observations)
+# Unlocked Adaptive LightGBM Hyperparameters & Dynamic Search Distributions
 # ==============================================================================
-OPTIMAL_LGBM_PARAMS = {
-    'learning_rate': 0.02,
-    'n_estimators': 400,
-    'num_leaves': 63,
-    'subsample': 0.95,
+DEFAULT_LGBM_PARAMS = {
+    'learning_rate': 0.035,
+    'n_estimators': 300,
+    'num_leaves': 31,
+    'max_depth': 6,
+    'subsample': 0.85,
     'colsample_bytree': 0.85,
     'reg_alpha': 0.10,
-    'reg_lambda': 0.10,
+    'reg_lambda': 0.20,
     'min_child_samples': 20,
     'random_state': 42,
     'verbose': -1,
     'n_jobs': -1
 }
 
-PARAM_GRID = {
-    'lgbm__learning_rate': [0.02],
-    'lgbm__n_estimators': [400],
-    'lgbm__num_leaves': [63],
-    'lgbm__subsample': [0.95],
-    'lgbm__colsample_bytree': [0.85],
-    'lgbm__reg_alpha': [0.10],
-    'lgbm__reg_lambda': [0.10]
+# Unlocked full parameter search space for dynamic auto-tuning when new data arrives
+UNLOCKED_PARAM_DISTRIBUTIONS = {
+    'lgbm__learning_rate': [0.01, 0.02, 0.035, 0.05, 0.08],
+    'lgbm__n_estimators': [150, 300, 450, 600],
+    'lgbm__num_leaves': [15, 31, 63, 127],
+    'lgbm__max_depth': [-1, 4, 6, 8, 10],
+    'lgbm__subsample': [0.70, 0.85, 0.95, 1.0],
+    'lgbm__colsample_bytree': [0.70, 0.80, 0.90, 1.0],
+    'lgbm__reg_alpha': [0.001, 0.01, 0.1, 0.5, 1.0],
+    'lgbm__reg_lambda': [0.001, 0.01, 0.1, 0.5, 1.0],
+    'lgbm__min_child_samples': [10, 20, 30, 50]
 }
 
-FAST_PARAM_GRID = PARAM_GRID
-MAX_ACCURACY_PARAM_GRID = PARAM_GRID
+# Fast adaptive grid for lightweight online retraining on new data batches
+FAST_PARAM_GRID = {
+    'lgbm__learning_rate': [0.02, 0.035, 0.05],
+    'lgbm__n_estimators': [200, 350, 500],
+    'lgbm__num_leaves': [31, 63],
+    'lgbm__subsample': [0.85, 0.95],
+    'lgbm__colsample_bytree': [0.85, 1.0],
+    'lgbm__reg_alpha': [0.01, 0.1],
+    'lgbm__reg_lambda': [0.01, 0.1]
+}
+
+MAX_ACCURACY_PARAM_GRID = UNLOCKED_PARAM_DISTRIBUTIONS
+PARAM_GRID = FAST_PARAM_GRID
+OPTIMAL_LGBM_PARAMS = DEFAULT_LGBM_PARAMS
 
 # ==============================================================================
 # Locked-in Crop Water Footprint (CWF) Empirical & Physical Constants

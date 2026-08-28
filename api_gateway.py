@@ -281,6 +281,38 @@ def list_recent_predictions(limit: int = 50, db: Session = Depends(get_db)):
     """Retrieves recent calculation audit records committed to the database."""
     return db.query(LocationPredictionRecord).order_by(LocationPredictionRecord.id.desc()).limit(limit).all()
 
+# ==============================================================================
+# Autonomous Model Self-Training & Hyperparameter Optimization Endpoints
+# ==============================================================================
+@app.post("/api/v1/model/retrain", tags=["Autonomous Self-Training"])
+def trigger_adaptive_retraining(n_iter: int = 15, cv_folds: int = 3):
+    """
+    Autonomously unlocks hyperparameters, executes cross-validation search over
+    the updated master dataset, promotes the optimal model, and hot-reloads it in memory.
+    """
+    from adaptive_trainer import AdaptiveModelTrainer
+    trainer = AdaptiveModelTrainer()
+    try:
+        results = trainer.optimize_and_train(n_iter_search=n_iter, cv_folds=cv_folds, auto_promote=True)
+        # Hot-reload in memory
+        engine_instance.reload_model()
+        return {
+            "status": "success",
+            "message": "Model autonomously retrained and hot-reloaded into active memory.",
+            "metrics": results
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Autonomous retraining failed: {str(e)}")
+
+@app.get("/api/v1/model/status", tags=["Autonomous Self-Training"])
+def get_active_model_status():
+    """Returns active LightGBM production model metadata, hyperparameters, and R² score."""
+    from adaptive_trainer import AdaptiveModelTrainer
+    trainer = AdaptiveModelTrainer()
+    metadata = trainer.get_latest_model_status()
+    metadata["engine_model_loaded"] = engine_instance.model is not None
+    return metadata
+
 if __name__ == "__main__":
     import uvicorn
     print("================================================================")

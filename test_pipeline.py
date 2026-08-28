@@ -261,5 +261,18 @@ def test_streaming_pipeline():
     assert res['total_records'] == 50
     assert res['throughput_records_per_sec'] > 0
 
+def test_adaptive_self_training_and_hot_reloading():
+    """Test dynamic hyperparameter optimization, model promotion, and hot-reloading."""
+    from adaptive_trainer import AdaptiveModelTrainer
+    from universal_engine import UniversalCropWaterFootprintEngine
 
+    trainer = AdaptiveModelTrainer()
+    df = trainer.load_master_dataset().sample(200, random_state=42)
+    res = trainer.optimize_and_train(dataset=df, n_iter_search=2, cv_folds=2, auto_promote=False)
+    
+    assert res['status'] == 'success'
+    assert 'learning_rate' in res['optimal_hyperparameters']
+    assert res['global_r2'] > 0.80
 
+    engine = UniversalCropWaterFootprintEngine()
+    assert engine.reload_model() is True
