@@ -276,3 +276,56 @@ def test_adaptive_self_training_and_hot_reloading():
 
     engine = UniversalCropWaterFootprintEngine()
     assert engine.reload_model() is True
+
+def test_time_period_selection():
+    """Test prediction across different temporal scopes (instantaneous, growing season, annual, future horizon)."""
+    from universal_engine import UniversalCropWaterFootprintEngine
+    from schemas import UniversalIngestionRequest, AtmosphericPayload, SoilPayload, CropPayload, TimePeriodPayload
+
+    engine = UniversalCropWaterFootprintEngine()
+
+    base_atm = AtmosphericPayload(
+        temp_c=30.0, solar_rad_mj=22.0, rh_pct=50.0, wind_speed_ms=3.0,
+        precip_mm=2.0, elevation_m=200.0, latitude_deg=18.0, day_of_year=180, hour_of_day=12
+    )
+    base_soil = SoilPayload(soil_type="clay_loam", volumetric_moisture=0.25)
+    base_crop = CropPayload(crop_type="sugarcane", growth_stage="mid", custom_yield_ton_ha=150.0)
+
+    # 1. Instantaneous evaluation (single 6h interval)
+    req_inst = UniversalIngestionRequest(
+        location_label="Test Field", atmosphere=base_atm, soil=base_soil, crop=base_crop,
+        time_period=TimePeriodPayload(mode="instantaneous")
+    )
+    res_inst = engine.process_payload(req_inst)
+    assert res_inst.time_period_summary.mode == "instantaneous"
+    assert res_inst.time_period_summary.scaling_factor == 1.0
+
+    # 2. Growing season evaluation (360 days for sugarcane)
+    req_season = UniversalIngestionRequest(
+        location_label="Test Field", atmosphere=base_atm, soil=base_soil, crop=base_crop,
+        time_period=TimePeriodPayload(mode="growing_season")
+    )
+    res_season = engine.process_payload(req_season)
+    assert res_season.time_period_summary.mode == "growing_season"
+    assert res_season.time_period_summary.duration_days == 360.0
+    assert res_season.time_period_summary.scaling_factor == 360.0 * 4.0
+    assert res_season.crop_water_footprint_m3_ton.total_water_footprint_m3_ton > res_inst.crop_water_footprint_m3_ton.total_water_footprint_m3_ton
+
+    # 3. Annual evaluation (365.25 days)
+    req_annual = UniversalIngestionRequest(
+        location_label="Test Field", atmosphere=base_atm, soil=base_soil, crop=base_crop,
+        time_period=TimePeriodPayload(mode="annual")
+    )
+    res_annual = engine.process_payload(req_annual)
+    assert res_annual.time_period_summary.mode == "annual"
+    assert res_annual.time_period_summary.duration_days == 365.25
+
+    # 4. Future Horizon evaluation (e.g. 2050 climate drift)
+    req_horizon = UniversalIngestionRequest(
+        location_label="Test Field", atmosphere=base_atm, soil=base_soil, crop=base_crop,
+        time_period=TimePeriodPayload(mode="future_horizon", target_horizon_year=2050)
+    )
+    res_horizon = engine.process_payload(req_horizon)
+    assert res_horizon.time_period_summary.mode == "future_horizon"
+    assert res_horizon.time_period_summary.target_horizon_year == 2050
+

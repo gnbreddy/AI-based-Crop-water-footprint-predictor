@@ -5,7 +5,59 @@ import os
 # ==============================================================================
 # Protected via environment variable (set GEE_PROJECT_ID in your .env or shell)
 GEE_PROJECT_ID = os.getenv('GEE_PROJECT_ID', 'gen-lang-client-0784106715')
-ROI_COORDS = [73.40, 15.42, 74.42, 17.17]  # [min_lon, min_lat, max_lon, max_lat]
+ROI_COORDS = [73.40, 15.42, 74.42, 17.17]  # [min_lon, min_lat, max_lon, max_lat] default Kolhapur
+
+# Multi-Region Agro-Ecological Configurations for GEE & ML Ingestion
+REGIONS = {
+    'kolhapur': {
+        'name': 'Kolhapur Sugarcane (India)',
+        'crop': 'sugarcane',
+        'soil': 'clay_loam',
+        'roi_coords': [73.40, 15.42, 74.42, 17.17],
+        'center': [16.70, 74.24],
+        'elevation_m': 570.0,
+        'kc': 0.50,
+        'yield_baseline': 150.0,
+        'growing_season_days': 360,
+        'description': 'Tropical wet-and-dry monsoon sugarcane heartland of Western India.'
+    },
+    'nile_delta': {
+        'name': 'Nile Delta Cotton (Egypt)',
+        'crop': 'cotton',
+        'soil': 'sandy_loam',
+        'roi_coords': [30.40, 30.50, 31.60, 31.50],
+        'center': [31.00, 31.00],
+        'elevation_m': 15.0,
+        'kc': 0.85,
+        'yield_baseline': 3.5,
+        'growing_season_days': 180,
+        'description': 'Hyper-arid Mediterranean delta intensive irrigation cotton belt.'
+    },
+    'kansas': {
+        'name': 'Kansas Wheat (USA)',
+        'crop': 'wheat',
+        'soil': 'silt_loam',
+        'roi_coords': [-99.50, 37.80, -98.00, 39.00],
+        'center': [38.50, -98.50],
+        'elevation_m': 500.0,
+        'kc': 0.90,
+        'yield_baseline': 5.0,
+        'growing_season_days': 220,
+        'description': 'North American Great Plains temperate winter wheat grain belt.'
+    },
+    'mekong_delta': {
+        'name': 'Mekong Monsoon Rice (Vietnam)',
+        'crop': 'rice',
+        'soil': 'clay',
+        'roi_coords': [105.00, 9.80, 106.20, 10.80],
+        'center': [10.20, 105.80],
+        'elevation_m': 10.0,
+        'kc': 1.15,
+        'yield_baseline': 4.5,
+        'growing_season_days': 120,
+        'description': 'Tropical monsoon alluvial floodplain high-intensity paddy rice system.'
+    }
+}
 
 # ==============================================================================
 # File System & Storage Paths

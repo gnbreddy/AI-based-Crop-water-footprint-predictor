@@ -110,8 +110,8 @@
         <div class="glass-card chart-container-card">
           <div class="chart-header">
             <div class="chart-title-group">
-              <h3 class="card-title">Multi-Decade Continuous Curve (1990 – 2050)</h3>
-              <span class="chart-badge">● Solid: Validated (1990–2025) &nbsp;|&nbsp; ◌ Dashed: AI Auto-Completed (2026–2050)</span>
+              <h3 class="card-title">Multi-Decade Continuous Curve (1990 – <span id="display-horizon-year">2050</span>)</h3>
+              <span class="chart-badge">● Solid: Validated (1990–2025) &nbsp;|&nbsp; ◌ Dashed: AI Auto-Completed (2026–<span id="display-horizon-badge">2050</span>)</span>
             </div>
             <button class="btn-reset" id="btn-reset-params">Reset Baseline</button>
           </div>
@@ -121,18 +121,18 @@
           <div class="chart-footer-metrics">
             <div class="footer-stat">
               <span class="f-lbl">1990 Baseline</span>
-              <span class="f-val">221.6 m³/t</span>
+              <span class="f-val" id="footer-1990-val">221.6 m³/t</span>
             </div>
             <div class="footer-stat">
               <span class="f-lbl">2025 Present</span>
-              <span class="f-val">222.1 m³/t</span>
+              <span class="f-val" id="footer-2025-val">222.1 m³/t</span>
             </div>
             <div class="footer-stat highlight">
-              <span class="f-lbl">2050 Projected</span>
+              <span class="f-lbl"><span id="footer-horizon-lbl">2050</span> Projected</span>
               <span class="f-val" id="footer-2050-val">238.4 m³/t</span>
             </div>
             <div class="footer-stat">
-              <span class="f-lbl">60-Year Variance</span>
+              <span class="f-lbl">Variance</span>
               <span class="f-val" id="footer-variance-val">+7.6% (1.08x)</span>
             </div>
           </div>
@@ -140,19 +140,51 @@
 
         <!-- Real-Time Interactive Parameter Controls -->
         <div class="glass-card controls-card">
-          <h3 class="card-title">Climate & Weather Scenario Controls</h3>
-          <p class="card-desc">Tweak future meteorological drivers to see the curve re-project instantly:</p>
+          <h3 class="card-title">Climate & Temporal Scenario Controls</h3>
+          <p class="card-desc">Select prediction horizon, temporal basis, and meteorological drivers to re-project in real time:</p>
+
+          <!-- Time Period & Horizon Controls -->
+          <div class="preset-group time-period-group">
+            <span class="control-label">⏱️ Prediction Time Horizon:</span>
+            <div class="horizon-presets">
+              <button class="btn-horizon" data-year="2030">2030 (Near-Term)</button>
+              <button class="btn-horizon" data-year="2035">2035 (Decadal)</button>
+              <button class="btn-horizon" data-year="2040">2040 (Mid-Century)</button>
+              <button class="btn-horizon active" data-year="2050">2050 (Long-Term)</button>
+            </div>
+            <div class="slider-box" style="margin-top: 8px; margin-bottom: 8px;">
+              <div class="slider-header">
+                <span class="slider-title">📅 Custom Target Horizon</span>
+                <span class="slider-val" id="val-horizon">Year 2050</span>
+              </div>
+              <input type="range" id="slider-horizon" min="2026" max="2060" step="1" value="2050" class="custom-slider">
+              <div class="slider-hints"><span>2026 (Immediate)</span><span>2035 (Decadal)</span><span>2050 (Mid-Century)</span><span>2060 (Extended)</span></div>
+            </div>
+          </div>
+
+          <!-- Temporal Duration Basis -->
+          <div class="duration-mode-group">
+            <span class="control-label">⏳ Temporal Evaluation Scope:</span>
+            <div class="duration-toggle">
+              <button class="btn-duration active" id="btn-duration-annual" data-mode="annual">Full Calendar Year (365d)</button>
+              <button class="btn-duration" id="btn-duration-seasonal" data-mode="growing_season">Crop Growing Season (<span id="season-days-badge">360d</span>)</button>
+            </div>
+          </div>
 
           <!-- Preset Buttons -->
           <div class="preset-group">
-            <span class="control-label">Crop & Regional Presets:</span>
+            <span class="control-label">📍 Target Region & Agro-Ecology:</span>
             <div class="preset-buttons">
-              <button class="btn-preset active" data-crop="sugarcane">Sugarcane (Kc: 0.50)</button>
-              <button class="btn-preset" data-crop="cotton">Cotton (Kc: 0.85)</button>
-              <button class="btn-preset" data-crop="wheat">Wheat (Kc: 1.15)</button>
-              <button class="btn-preset" data-crop="rice">Rice (Kc: 1.20)</button>
+              <button class="btn-preset active" data-crop="sugarcane" data-region="kolhapur">Kolhapur Sugarcane</button>
+              <button class="btn-preset" data-crop="cotton" data-region="nile_delta">Nile Delta Cotton</button>
+              <button class="btn-preset" data-crop="wheat" data-region="kansas">Kansas Wheat</button>
+              <button class="btn-preset" data-crop="rice" data-region="mekong_delta">Mekong Monsoon Rice</button>
+            </div>
+            <div id="region-badge-desc" class="region-badge-desc">
+              Kolhapur (India) • Tropical Monsoon • Clay Loam • Sugarcane Season: 360 days
             </div>
           </div>
+
 
           <!-- Slider 1: Temperature Rise -->
           <div class="slider-box">

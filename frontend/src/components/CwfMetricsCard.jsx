@@ -20,6 +20,7 @@ export default function CwfMetricsCard({ result }) {
   const diag = result.thermodynamic_diagnostics;
   const et = result.evapotranspiration_depths_mm;
   const stress = result.irrigation_stress_assessment;
+  const tp = result.time_period_summary;
 
   // Sustainability badge color
   const isCritical = stress?.includes('Critical');
@@ -52,7 +53,27 @@ export default function CwfMetricsCard({ result }) {
         </div>
       </div>
 
+      {/* Time Period Evaluation Scope Summary */}
+      {tp && (
+        <div className="bg-cyan-950/30 border border-cyan-500/30 p-2.5 rounded-xl flex items-center justify-between text-xs">
+          <div className="flex items-center space-x-2">
+            <span className="p-1.5 bg-cyan-500/10 text-cyan-400 rounded-lg text-sm">⏱️</span>
+            <div>
+              <p className="text-[10px] text-cyan-300 font-bold uppercase tracking-wider">{tp.description || tp.mode}</p>
+              <p className="text-[11px] text-slate-300">
+                Duration: <strong className="text-white">{tp.duration_days} days</strong> | Scaling: <strong className="text-white font-mono">{tp.scaling_factor}×</strong>
+              </p>
+            </div>
+          </div>
+          <div className="text-right">
+            <p className="text-[10px] text-slate-400 uppercase">Crop Water Use (CWU)</p>
+            <p className="font-mono font-bold text-cyan-200">{tp.total_period_crop_water_use_m3_ha?.toFixed(1)} m³/ha</p>
+          </div>
+        </div>
+      )}
+
       {/* Main CWF 3-Metric Cards */}
+
       <div className="grid grid-cols-3 gap-3.5 text-center">
         {/* Green CWF */}
         <div className="bg-gradient-to-b from-slate-800/90 to-slate-900/90 p-4 rounded-xl border border-emerald-500/30 shadow-md">

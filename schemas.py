@@ -36,6 +36,18 @@ class CropPayload(BaseModel):
     custom_root_depth_m: Optional[float] = Field(None, description="Effective root-zone depth in meters", ge=0.1, le=5.0)
 
 # ==============================================================================
+# Pillar 5: Prediction Time Period & Horizon Payload
+# ==============================================================================
+class TimePeriodPayload(BaseModel):
+    mode: Literal['instantaneous', 'growing_season', 'annual', 'future_horizon'] = Field(
+        'growing_season',
+        description="Temporal scope for water footprint evaluation: instantaneous (6h), growing_season, annual (365d), or future_horizon (multi-year projection)"
+    )
+    duration_days: Optional[float] = Field(None, description="Custom duration in days for seasonal/growing period", ge=1.0, le=3650.0)
+    target_horizon_year: Optional[int] = Field(2030, description="Target climate projection horizon year (e.g., 2030, 2040, 2050)", ge=2024, le=2100)
+    start_year: Optional[int] = Field(2026, description="Start year for future projection horizon", ge=1990, le=2050)
+
+# ==============================================================================
 # Unified Ingestion Request Payload
 # ==============================================================================
 class UniversalIngestionRequest(BaseModel):
@@ -43,6 +55,7 @@ class UniversalIngestionRequest(BaseModel):
     atmosphere: AtmosphericPayload
     soil: SoilPayload
     crop: CropPayload
+    time_period: Optional[TimePeriodPayload] = Field(default_factory=TimePeriodPayload)
 
 # ==============================================================================
 # Standardized Universal Diagnostics Response Schema
@@ -68,6 +81,14 @@ class CropWaterFootprintOutput(BaseModel):
     green_share_pct: float
     blue_share_pct: float
 
+class TimePeriodDiagnostics(BaseModel):
+    mode: str
+    duration_days: float
+    target_horizon_year: Optional[int] = None
+    scaling_factor: float
+    total_period_crop_water_use_m3_ha: float
+    description: str
+
 class UniversalPredictionResponse(BaseModel):
     status: str = "success"
     location_label: str
@@ -76,4 +97,5 @@ class UniversalPredictionResponse(BaseModel):
     thermodynamic_diagnostics: ThermodynamicDiagnostics
     evapotranspiration_depths_mm: EvapotranspirationDepths
     crop_water_footprint_m3_ton: CropWaterFootprintOutput
+    time_period_summary: Optional[TimePeriodDiagnostics] = None
     irrigation_stress_assessment: str

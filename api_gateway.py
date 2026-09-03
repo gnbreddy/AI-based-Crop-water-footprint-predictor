@@ -17,7 +17,8 @@ from schemas import (
     UniversalPredictionResponse,
     ThermodynamicDiagnostics,
     EvapotranspirationDepths,
-    CropWaterFootprintOutput
+    CropWaterFootprintOutput,
+    TimePeriodDiagnostics
 )
 from normalization_engine import PhysicalNormalizationEngine
 from universal_engine import UniversalCropWaterFootprintEngine
@@ -188,7 +189,7 @@ def predict_crop_water_footprint(
     rel_solar = norm.relative_solar_forcing(atm.solar_rad_mj, atm.latitude_deg, atm.day_of_year)
     et0_pm = norm.reference_et0_penman_monteith(atm.temp_c, atm.solar_rad_mj, atm.rh_pct, atm.wind_speed_ms, atm.elevation_m)
 
-    # 4. Actual ET Calculation
+    # 4. Actual ET Calculation with Time Period Scope
     raw_calc = engine_instance.analyze_location(
         temp_c=atm.temp_c,
         solar_rad_mj=atm.solar_rad_mj,
@@ -207,7 +208,8 @@ def predict_crop_water_footprint(
         hour_of_day=atm.hour_of_day,
         growth_stage=request.crop.growth_stage,
         custom_fc=fc,
-        custom_wp=wp
+        custom_wp=wp,
+        time_period=request.time_period
     )
 
     actual_et_mm = raw_calc['evapotranspiration_depth_mm']['actual_et_mm']
@@ -246,8 +248,10 @@ def predict_crop_water_footprint(
         thermodynamic_diagnostics=ThermodynamicDiagnostics(**raw_calc['thermodynamic_diagnostics']),
         evapotranspiration_depths_mm=EvapotranspirationDepths(**raw_calc['evapotranspiration_depth_mm']),
         crop_water_footprint_m3_ton=CropWaterFootprintOutput(**raw_calc['crop_water_footprint_m3_ton']),
+        time_period_summary=TimePeriodDiagnostics(**raw_calc['time_period_summary']),
         irrigation_stress_assessment=raw_calc['irrigation_stress_assessment']
     )
+
 
 @app.get("/api/v1/crops", response_model=List[CropProfileOut], tags=["Crop & Soil Profiles"])
 def list_crops(db: Session = Depends(get_db)):

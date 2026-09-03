@@ -8,7 +8,8 @@ from config import (
     MODEL_SAVE_PATH,
     OUTPUT_DIR,
     HEATMAP_TARGET_YEAR,
-    LOCAL_DATA_PATH
+    LOCAL_DATA_PATH,
+    REGIONS
 )
 from extractor import (
     authenticate_gee,
@@ -37,18 +38,24 @@ def run_pipeline(
     deep_optimize=True,
     start_year=2000,
     end_year=2025,
-    benchmark_twf=135.0
+    benchmark_twf=135.0,
+    region='all'
 ):
     print("=" * 75)
     print(" CROP WATER FOOTPRINT (CWF) MAXIMUM ACCURACY & EPOCH ENGINE")
     print("=" * 75)
 
+    target_regions = list(REGIONS.keys()) if region == 'all' else [region]
+    print(f"[Pipeline Scope] Target Regions ({len(target_regions)}): {target_regions}")
+
     # 1A. Earth Engine Extraction to Google Drive (Batch Mode)
     if run_extract:
         print("\n[Stage 1A] Initializing Earth Engine Batch Tasks to Google Drive...")
         if authenticate_gee():
-            for yr in range(start_year, end_year + 1):
-                extract_6hourly_data_for_year(yr)
+            for reg in target_regions:
+                print(f"  -> Dispatching GEE tasks for region: {reg}")
+                for yr in range(start_year, end_year + 1):
+                    extract_6hourly_data_for_year(yr, region=reg)
             check_task_status()
         else:
             print("[Stage 1A] GEE authentication skipped/failed.")
@@ -57,17 +64,20 @@ def run_pipeline(
     if run_download_local:
         print("\n[Stage 1B] Initializing Direct Earth Engine Download to Local ./data Folder...")
         if authenticate_gee():
-            for yr in range(start_year, end_year + 1):
-                download_6hourly_data_locally(yr)
+            for reg in target_regions:
+                print(f"  -> Downloading GEE data for region: {reg}")
+                for yr in range(start_year, end_year + 1):
+                    download_6hourly_data_locally(yr, region=reg)
         else:
             print("[Stage 1B] GEE authentication skipped/failed.")
 
     # 2. Mock Data Generation (Optional / Offline Mode)
     if run_mock:
-        print(f"\n[Stage 2] Generating Multi-Year Synthetic 6-Hourly Datasets ({start_year} -> {end_year})...")
-        generate_mock_data(start_year=start_year, end_year=end_year)
+        print(f"\n[Stage 2] Generating Multi-Region Synthetic 6-Hourly Datasets ({start_year} -> {end_year})...")
+        generate_mock_data(start_year=start_year, end_year=end_year, regions=target_regions)
 
     # 3. Data Ingestion & Feature Compilation
+
     print("\n[Stage 3] Ingesting CSVs and Engineering Advanced Temporal Lag & Rolling Features...")
     df = compile_datasets(LOCAL_DATA_PATH)
     if df is None or df.empty:
@@ -158,6 +168,8 @@ def main():
     parser.add_argument("--all", action="store_true", help="Run full end-to-end pipeline (mock/compile/train/calibrate/visualize)")
     parser.add_argument("--start-year", type=int, default=2000, help="Starting year for data processing (default 2000)")
     parser.add_argument("--end-year", type=int, default=2025, help="Ending year for data processing (default 2025)")
+    parser.add_argument("--region", type=str, default="all", choices=list(REGIONS.keys()) + ["all"],
+                        help="Target agricultural region: kolhapur, nile_delta, kansas, mekong_delta, or all")
     parser.add_argument("--benchmark-twf", type=float, default=135.0, help="Target total water footprint benchmark (m3/ton)")
 
     args = parser.parse_args()
@@ -174,7 +186,8 @@ def main():
             deep_optimize=True,
             start_year=args.start_year,
             end_year=args.end_year,
-            benchmark_twf=args.benchmark_twf
+            benchmark_twf=args.benchmark_twf,
+            region=args.region
         )
     else:
         run_pipeline(
@@ -187,8 +200,10 @@ def main():
             deep_optimize=args.deep_optimize,
             start_year=args.start_year,
             end_year=args.end_year,
-            benchmark_twf=args.benchmark_twf
+            benchmark_twf=args.benchmark_twf,
+            region=args.region
         )
+
 
 if __name__ == "__main__":
     main()

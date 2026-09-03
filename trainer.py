@@ -70,7 +70,7 @@ def train_and_evaluate(clean_df, param_grid=None, deep_search=False, save_epoch_
         scaler.set_output(transform="pandas")
         pipeline = Pipeline([
             ('scaler', scaler),
-            ('lgbm', lgb.LGBMRegressor(random_state=42, verbose=-1, n_jobs=-1))
+            ('lgbm', lgb.LGBMRegressor(random_state=42, verbose=-1))
         ])
 
         # 3. Hyperparameter Search
@@ -83,10 +83,11 @@ def train_and_evaluate(clean_df, param_grid=None, deep_search=False, save_epoch_
                 cv=cv_folds,
                 scoring='r2',
                 random_state=42,
-                n_jobs=-1
+                n_jobs=1
             )
         else:
-            searcher = GridSearchCV(pipeline, param_grid, cv=cv_folds, scoring='r2', n_jobs=-1)
+            searcher = GridSearchCV(pipeline, param_grid, cv=cv_folds, scoring='r2', n_jobs=1)
+
 
         searcher.fit(X_train, y_train)
 
@@ -199,7 +200,7 @@ def train_final_production_model(clean_df, data_dir=LOCAL_DATA_PATH):
     print(f"[Trainer] Locked Hyperparameters: {OPTIMAL_LGBM_PARAMS}")
 
     # Isolation Forest on full dataset
-    iso = IsolationForest(contamination=0.04, random_state=42)
+    iso = IsolationForest(contamination=0.04, random_state=42, n_jobs=1)
     inlier_mask = iso.fit_predict(clean_df[active_features]) == 1
     train_clean = clean_df[inlier_mask]
 

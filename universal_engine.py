@@ -8,6 +8,8 @@ from schemas import (
     AtmosphericPayload,
     SoilPayload,
     CropPayload,
+    TimePeriodPayload,
+    TimePeriodDiagnostics,
     UniversalIngestionRequest,
     UniversalPredictionResponse,
     ThermodynamicDiagnostics,
@@ -17,6 +19,18 @@ from schemas import (
 from normalization_engine import PhysicalNormalizationEngine
 from crop_repository import CropSoilRepository
 from db_models import SessionLocal, LocationPredictionRecord
+
+# Standardized crop growing season lengths (in calendar days)
+CROP_SEASON_DAYS = {
+    'sugarcane': 360.0,
+    'cotton': 180.0,
+    'wheat': 140.0,
+    'rice': 120.0,
+    'maize': 125.0,
+    'soybean': 110.0,
+    'potato': 120.0,
+    'tomato': 110.0
+}
 
 # Export static reference dictionaries for backwards compatibility
 SOIL_DATABASE = {
@@ -45,7 +59,7 @@ class UniversalCropWaterFootprintEngine:
     
     Accepts standardized physical payloads, translates raw meteorology into
     dimensionless thermodynamic ratios, and outputs verified Green, Blue, and
-    Total Crop Water Footprints (m³/ton) for any coordinate on Earth.
+    Total Crop Water Footprints (m³/ton) for any coordinate on Earth across flexible time periods.
     """
     def __init__(self, model_path=None):
         from config import FINAL_MODEL_PATH
@@ -95,7 +109,8 @@ class UniversalCropWaterFootprintEngine:
             hour_of_day=request.atmosphere.hour_of_day,
             growth_stage=request.crop.growth_stage,
             custom_fc=request.soil.custom_field_capacity,
-            custom_wp=request.soil.custom_wilting_point
+            custom_wp=request.soil.custom_wilting_point,
+            time_period=request.time_period
         )
 
         # Log prediction to relational database
@@ -109,6 +124,7 @@ class UniversalCropWaterFootprintEngine:
             thermodynamic_diagnostics=ThermodynamicDiagnostics(**raw_res['thermodynamic_diagnostics']),
             evapotranspiration_depths_mm=EvapotranspirationDepths(**raw_res['evapotranspiration_depth_mm']),
             crop_water_footprint_m3_ton=CropWaterFootprintOutput(**raw_res['crop_water_footprint_m3_ton']),
+            time_period_summary=TimePeriodDiagnostics(**raw_res['time_period_summary']),
             irrigation_stress_assessment=raw_res['irrigation_stress_assessment']
         )
 
@@ -130,9 +146,11 @@ class UniversalCropWaterFootprintEngine:
                          hour_of_day: int = 12,
                          growth_stage: str = 'average',
                          custom_fc: float = None,
-                         custom_wp: float = None) -> dict:
+                         custom_wp: float = None,
+                         time_period = None) -> dict:
         """
-        Evaluates physical CWF for any geographic location using decoupled normalization.
+        Evaluates physical CWF for any geographic location using decoupled normalization
+        and scales results across the chosen prediction time period (Growing Season, Annual, Instantaneous, Horizon).
         """
         # Dynamic Database Fetching
         crop_prof = self.repo.get_crop_profile(crop_type, growth_stage=growth_stage)
@@ -151,7 +169,7 @@ class UniversalCropWaterFootprintEngine:
         rel_solar = self.norm.relative_solar_forcing(solar_rad_mj, latitude_deg, day_of_year)
         et0_pm = self.norm.reference_et0_penman_monteith(temp_c, solar_rad_mj, rh_pct, wind_speed_ms, elevation_m)
 
-        # 2. Machine Learning Inference or Physics Fallback
+        # 2. Machine Learning Inference or Physics Fallback (Instantaneous 6-Hourly Base)
         if self.model is not None:
             try:
                 features_dict = {
@@ -179,23 +197,57 @@ class UniversalCropWaterFootprintEngine:
                 }
                 feat_df = pd.DataFrame([features_dict])
                 et_pred = float(self.model.predict(feat_df)[0])
-                actual_et_mm = float(np.maximum(0.05, et_pred))
+                actual_et_6h = float(np.maximum(0.05, et_pred))
             except Exception:
-                actual_et_mm = float(et0_pm * kc * (0.4 + 0.6 * ssi))
+                actual_et_6h = float(et0_pm * kc * (0.4 + 0.6 * ssi) / 4.0)
         else:
-            actual_et_mm = float(et0_pm * kc * (0.4 + 0.6 * ssi))
+            actual_et_6h = float(et0_pm * kc * (0.4 + 0.6 * ssi) / 4.0)
 
-        # 3. Crop Adjusted Transpiration
+        # 3. Time Period Temporal Scaling
+        time_mode = 'growing_season'
+        target_year = 2030
+        duration_days = None
+
+        if time_period is not None:
+            if hasattr(time_period, 'mode'):
+                time_mode = time_period.mode
+                duration_days = time_period.duration_days
+                target_year = time_period.target_horizon_year
+            elif isinstance(time_period, dict):
+                time_mode = time_period.get('mode', 'growing_season')
+                duration_days = time_period.get('duration_days')
+                target_year = time_period.get('target_horizon_year', 2030)
+
+        if duration_days is not None and duration_days > 0:
+            eff_days = float(duration_days)
+        elif time_mode == 'growing_season':
+            eff_days = float(CROP_SEASON_DAYS.get(crop_type.lower(), 180.0))
+        elif time_mode in ['annual', 'future_horizon']:
+            eff_days = 365.25
+        else:  # instantaneous
+            eff_days = 0.25
+
+        # Climate drift multiplier if predicting forward horizon (e.g. 2030, 2040, 2050)
+        drift_et_mult = 1.0
+        drift_rain_mult = 1.0
+        if time_mode == 'future_horizon':
+            years_drift = max(0, (target_year or 2030) - 2025)
+            drift_et_mult = 1.0 + 0.0035 * years_drift
+            drift_rain_mult = max(0.60, 1.0 - 0.0030 * years_drift)
+
+        num_intervals = (eff_days * 4.0) if time_mode != 'instantaneous' else 1.0
+
+        # Cumulative evapotranspiration and precipitation over the chosen period
+        actual_et_mm = float(actual_et_6h * num_intervals * drift_et_mult)
         et_crop_mm = float(kc * actual_et_mm)
+        period_precip_mm = float(precip_mm * num_intervals * drift_rain_mult)
+        p_eff_mm = float(alpha * period_precip_mm)
 
-        # 4. Infiltration & Effective Rain
-        p_eff_mm = float(alpha * precip_mm)
-
-        # 5. Green / Blue Hydrological Partitioning
+        # 4. Green / Blue Hydrological Partitioning
         et_green_mm = float(min(et_crop_mm, p_eff_mm))
         et_blue_mm = float(max(0.0, et_crop_mm - p_eff_mm))
 
-        # 6. Water Footprint per Ton of Harvest Output (m³/ton)
+        # 5. Water Footprint per Ton of Harvest Output (m³/ton)
         cwu_green_m3_ha = 10.0 * et_green_mm
         cwu_blue_m3_ha = 10.0 * et_blue_mm
         cwu_total_m3_ha = cwu_green_m3_ha + cwu_blue_m3_ha
@@ -207,7 +259,7 @@ class UniversalCropWaterFootprintEngine:
         green_ratio_pct = (gwf_m3_ton / (twf_m3_ton + 1e-6)) * 100.0
         blue_ratio_pct = 100.0 - green_ratio_pct
 
-        # 7. Sustainability & Irrigation Stress Rating
+        # 6. Sustainability & Irrigation Stress Rating
         if bwf_m3_ton > 200.0 or ssi < 0.25:
             stress_level = 'Critical Irrigation Pressure'
         elif bwf_m3_ton > 100.0 or ssi < 0.50:
@@ -252,8 +304,17 @@ class UniversalCropWaterFootprintEngine:
                 'green_share_pct': round(green_ratio_pct, 1),
                 'blue_share_pct': round(blue_ratio_pct, 1)
             },
+            'time_period_summary': {
+                'mode': time_mode,
+                'duration_days': round(eff_days, 2),
+                'target_horizon_year': target_year if time_mode == 'future_horizon' else None,
+                'scaling_factor': round(num_intervals, 1),
+                'total_period_crop_water_use_m3_ha': round(cwu_total_m3_ha, 2),
+                'description': f"Evaluated for {time_mode.replace('_', ' ').title()} ({eff_days:.0f} days)"
+            },
             'irrigation_stress_assessment': stress_level
         }
+
 
     def _log_record(self, location_label: str, request: UniversalIngestionRequest, raw_res: dict):
         """Logs prediction calculation to SQLite/PostgreSQL audit table."""

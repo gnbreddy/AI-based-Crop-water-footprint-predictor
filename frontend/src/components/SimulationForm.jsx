@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Sliders, Play, Sparkles, MapPin, Layers, Sun } from 'lucide-react';
+import { Sliders, Play, Sparkles, MapPin, Layers, Sun, Clock } from 'lucide-react';
 import { fetchCrops, fetchSoils } from '../api/cwfApi';
 
 const PRESETS = [
@@ -18,7 +18,10 @@ const PRESETS = [
     volumetric_moisture: 0.28,
     crop_type: 'sugarcane',
     growth_stage: 'mid',
-    custom_yield_ton_ha: 150.0
+    custom_yield_ton_ha: 150.0,
+    time_period_mode: 'growing_season',
+    duration_days: 360.0,
+    target_horizon_year: 2030
   },
   {
     name: 'Nile Delta Cotton',
@@ -35,7 +38,10 @@ const PRESETS = [
     volumetric_moisture: 0.12,
     crop_type: 'cotton',
     growth_stage: 'mid',
-    custom_yield_ton_ha: 3.5
+    custom_yield_ton_ha: 3.5,
+    time_period_mode: 'growing_season',
+    duration_days: 180.0,
+    target_horizon_year: 2030
   },
   {
     name: 'Kansas Wheat',
@@ -52,7 +58,10 @@ const PRESETS = [
     volumetric_moisture: 0.24,
     crop_type: 'wheat',
     growth_stage: 'mid',
-    custom_yield_ton_ha: 5.0
+    custom_yield_ton_ha: 5.0,
+    time_period_mode: 'growing_season',
+    duration_days: 140.0,
+    target_horizon_year: 2030
   },
   {
     name: 'Mekong Monsoon Rice',
@@ -69,7 +78,10 @@ const PRESETS = [
     volumetric_moisture: 0.36,
     crop_type: 'rice',
     growth_stage: 'mid',
-    custom_yield_ton_ha: 4.5
+    custom_yield_ton_ha: 4.5,
+    time_period_mode: 'growing_season',
+    duration_days: 120.0,
+    target_horizon_year: 2030
   }
 ];
 
@@ -94,6 +106,9 @@ export default function SimulationForm({ onPredict, loading, onCoordsChange }) {
     crop_type: 'sugarcane',
     growth_stage: 'mid',
     custom_yield_ton_ha: 150.0,
+    time_period_mode: 'growing_season',
+    duration_days: 360.0,
+    target_horizon_year: 2030
   });
 
   useEffect(() => {
@@ -151,6 +166,12 @@ export default function SimulationForm({ onPredict, loading, onCoordsChange }) {
         crop_type: formData.crop_type,
         growth_stage: formData.growth_stage,
         custom_yield_ton_ha: formData.custom_yield_ton_ha,
+      },
+      time_period: {
+        mode: formData.time_period_mode,
+        duration_days: formData.duration_days,
+        target_horizon_year: formData.target_horizon_year,
+        start_year: 2026
       }
     };
     onPredict(payload);
@@ -170,29 +191,36 @@ export default function SimulationForm({ onPredict, loading, onCoordsChange }) {
           </div>
           <div>
             <h2 className="text-base font-bold text-white tracking-tight">Physical Simulation Controls</h2>
-            <p className="text-[11px] text-slate-400">Configure atmospheric, soil hydraulic, and crop phenological pillars</p>
+            <p className="text-[11px] text-slate-400">Configure atmospheric, soil hydraulic, crop phenological, and temporal pillars</p>
           </div>
         </div>
 
-        {/* Preset Chips */}
-        <div className="flex items-center gap-1.5 flex-wrap">
-          <span className="text-[10px] uppercase font-bold text-slate-400 mr-1 flex items-center">
-            <Sparkles className="w-3 h-3 mr-1 text-teal-400" /> Presets:
+        {/* 4 Multi-Location Presets */}
+        <div className="flex flex-wrap items-center gap-1.5">
+          <span className="text-[11px] text-slate-400 mr-1 flex items-center">
+            <Sparkles className="w-3 h-3 text-amber-400 mr-1" />
+            Regions:
           </span>
-          {PRESETS.map((p) => (
+          {PRESETS.map((preset) => (
             <button
-              key={p.name}
+              key={preset.name}
               type="button"
-              onClick={() => applyPreset(p)}
-              className="text-[11px] px-2.5 py-1 rounded-full bg-slate-800 hover:bg-teal-500/20 hover:text-teal-300 hover:border-teal-500/30 border border-slate-700 text-slate-300 transition-all"
+              onClick={() => applyPreset(preset)}
+              className={`text-[11px] px-2.5 py-1 rounded-md border transition-all ${
+                formData.location_label === preset.label
+                  ? 'bg-teal-500/20 border-teal-500/60 text-teal-300 font-semibold'
+                  : 'bg-slate-800/60 border-slate-700/60 text-slate-300 hover:bg-slate-700/60'
+              }`}
             >
-              {p.name}
+              {preset.name}
             </button>
           ))}
         </div>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-5 text-xs">
+      {/* 4 Pillars of Normalized Mechanics */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 text-xs">
+
         {/* Pillar 1: Atmospheric */}
         <div className="space-y-3.5 bg-slate-800/40 p-4 rounded-xl border border-slate-800 shadow-inner">
           <div className="flex items-center space-x-1.5 border-b border-slate-700/50 pb-2">
@@ -317,6 +345,39 @@ export default function SimulationForm({ onPredict, loading, onCoordsChange }) {
               <label className="block text-slate-400 mb-1">Longitude (°)</label>
               <input type="number" step="0.1" name="longitude_deg" value={formData.longitude_deg} onChange={handleChange} className="w-full bg-slate-950 border border-slate-700 rounded-lg px-2 py-1.5 text-white font-mono" />
             </div>
+          </div>
+        </div>
+
+        {/* Pillar 4: Temporal Scope & Horizon */}
+        <div className="space-y-3.5 bg-slate-800/40 p-4 rounded-xl border border-slate-800 shadow-inner">
+          <div className="flex items-center space-x-1.5 border-b border-slate-700/50 pb-2">
+            <Clock className="w-4 h-4 text-cyan-400" />
+            <span className="font-bold text-cyan-400 uppercase tracking-wider text-[11px]">4. Temporal Horizon</span>
+          </div>
+
+          <div>
+            <label className="block text-slate-400 mb-1">Prediction Scope</label>
+            <select name="time_period_mode" value={formData.time_period_mode} onChange={handleChange} className="w-full bg-slate-950 border border-slate-700 rounded-lg px-2.5 py-1.5 text-white focus:border-cyan-500 focus:outline-none">
+              <option value="growing_season">Growing Season</option>
+              <option value="annual">Full Annual (365d)</option>
+              <option value="future_horizon">Future Horizon Projection</option>
+              <option value="instantaneous">Instantaneous (6h)</option>
+            </select>
+          </div>
+
+          <div>
+            <label className="block text-slate-400 mb-1">Season Duration (Days)</label>
+            <input type="number" step="1" min="1" max="3650" name="duration_days" value={formData.duration_days} onChange={handleChange} className="w-full bg-slate-950 border border-slate-700 rounded-lg px-2 py-1.5 text-white font-mono focus:border-cyan-500 focus:outline-none" />
+          </div>
+
+          <div>
+            <label className="block text-slate-400 mb-1">Target Horizon Year</label>
+            <select name="target_horizon_year" value={formData.target_horizon_year} onChange={handleChange} className="w-full bg-slate-950 border border-slate-700 rounded-lg px-2.5 py-1.5 text-white font-mono focus:border-cyan-500 focus:outline-none">
+              <option value={2030}>2030 (Near-Term)</option>
+              <option value={2035}>2035 (Decadal)</option>
+              <option value={2040}>2040 (Mid-Century)</option>
+              <option value={2050}>2050 (Long-Term)</option>
+            </select>
           </div>
         </div>
       </div>

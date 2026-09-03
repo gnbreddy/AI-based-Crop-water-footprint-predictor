@@ -117,7 +117,7 @@ class AdaptiveModelTrainer:
         print(f"[Adaptive Trainer] Unlocked Search Parameters: {list(param_distributions.keys())}")
 
         # 1. Outlier filtering
-        iso = IsolationForest(contamination=0.03, random_state=42)
+        iso = IsolationForest(contamination=0.03, random_state=42, n_jobs=1)
         inlier_mask = iso.fit_predict(dataset[active_features]) == 1
         clean_df = dataset[inlier_mask].reset_index(drop=True)
         print(f"[Adaptive Trainer] Filtered {len(dataset) - len(clean_df):,} anomalies. Training pool: {len(clean_df):,} rows.")
@@ -128,7 +128,7 @@ class AdaptiveModelTrainer:
         # 2. Pipeline setup
         scaler = StandardScaler()
         scaler.set_output(transform="pandas")
-        base_lgbm = lgb.LGBMRegressor(random_state=42, verbose=-1, n_jobs=-1)
+        base_lgbm = lgb.LGBMRegressor(random_state=42, verbose=-1)
 
         pipeline = Pipeline([
             ('scaler', scaler),
@@ -144,12 +144,13 @@ class AdaptiveModelTrainer:
             cv=kf,
             scoring='r2',
             random_state=42,
-            n_jobs=-1,
+            n_jobs=1,
             refit=True
         )
 
         print(f"[Adaptive Trainer] Running {n_iter_search} hyperparameter evaluations across {cv_folds}-fold CV...")
         searcher.fit(X, y)
+
 
         best_pipeline = searcher.best_estimator_
         best_params = {k.replace('lgbm__', ''): v for k, v in searcher.best_params_.items()}
@@ -261,3 +262,21 @@ class AdaptiveModelTrainer:
             'optimal_hyperparameters': DEFAULT_LGBM_PARAMS,
             'timestamp': 'Initial Production Convergence'
         }
+
+if __name__ == '__main__':
+    import argparse
+    parser = argparse.ArgumentParser(description="Adaptive Model Retraining Engine")
+    parser.add_argument("--n-iter", type=int, default=10, help="Number of random parameter evaluations")
+    parser.add_argument("--cv", type=int, default=3, help="Cross validation folds")
+    parser.add_argument("--no-promote", action="store_true", help="Do not promote model to production")
+    args = parser.parse_args()
+
+    trainer = AdaptiveModelTrainer()
+    result = trainer.optimize_and_train(
+        n_iter_search=args.n_iter,
+        cv_folds=args.cv,
+        auto_promote=not args.no_promote
+    )
+    print("\n[Adaptive Trainer] EXECUTION RESULT:")
+    print(json.dumps(result, indent=2))
+
