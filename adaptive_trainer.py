@@ -14,6 +14,7 @@ from sklearn.metrics import r2_score, mean_squared_error, mean_absolute_error
 
 from config import (
     FEATURES,
+    EXTENDED_FEATURES,
     TARGET,
     LOCAL_DATA_PATH,
     OUTPUT_DIR,
@@ -23,6 +24,7 @@ from config import (
     FAST_PARAM_GRID,
     DEFAULT_LGBM_PARAMS
 )
+
 
 class AdaptiveModelTrainer:
     """
@@ -109,8 +111,9 @@ class AdaptiveModelTrainer:
             param_distributions = UNLOCKED_PARAM_DISTRIBUTIONS
 
         start_time = time.time()
-        active_features = [f for f in FEATURES if f in dataset.columns]
+        active_features = [f for f in EXTENDED_FEATURES if f in dataset.columns]
         if TARGET not in dataset.columns:
+
             raise ValueError(f"Target column '{TARGET}' missing from training dataset.")
 
         print(f"\n[Adaptive Trainer] Initiating Dynamic Hyperparameter Auto-Tuning on {len(dataset):,} records...")

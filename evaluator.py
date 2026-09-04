@@ -9,7 +9,7 @@ from config import (
     FINAL_MODEL_PATH,
     LOCAL_DATA_PATH,
     OUTPUT_DIR,
-    FEATURES,
+    EXTENDED_FEATURES,
     TARGET
 )
 from compiler import compile_datasets
@@ -43,7 +43,8 @@ def evaluate_locked_model_across_all_years(data_path=None, model_path=None):
     print(f"[Evaluator] Loading locked production model from: {model_path}")
     model = joblib.load(model_path)
 
-    active_features = [f for f in FEATURES if f in df.columns]
+    # Match the base-plus-biophysical feature schema used by the production model.
+    active_features = [f for f in EXTENDED_FEATURES if f in df.columns]
     years = sorted(df['year'].unique())
     print(f"[Evaluator] Evaluating across {len(years)} individual years ({years[0]} to {years[-1]})...\n")
 

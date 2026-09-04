@@ -18,10 +18,13 @@ from schemas import (
     ThermodynamicDiagnostics,
     EvapotranspirationDepths,
     CropWaterFootprintOutput,
-    TimePeriodDiagnostics
+    TimePeriodDiagnostics,
+    SimplifiedScenarioPredictionRequest,
+    ThreeWayScenarioResponse
 )
 from normalization_engine import PhysicalNormalizationEngine
 from universal_engine import UniversalCropWaterFootprintEngine
+from climatology_engine import ClimatologyScenarioEngine
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -50,8 +53,9 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Global engine instance
+# Global engine instances
 engine_instance = UniversalCropWaterFootprintEngine()
+scenario_engine = ClimatologyScenarioEngine()
 
 # ==============================================================================
 # Database Session Dependency Injection
@@ -250,6 +254,27 @@ def predict_crop_water_footprint(
         crop_water_footprint_m3_ton=CropWaterFootprintOutput(**raw_calc['crop_water_footprint_m3_ton']),
         time_period_summary=TimePeriodDiagnostics(**raw_calc['time_period_summary']),
         irrigation_stress_assessment=raw_calc['irrigation_stress_assessment']
+    )
+
+@app.post("/api/v1/cwf/scenario-predict", response_model=ThreeWayScenarioResponse, tags=["CWF Zero-Friction Scenario Engine"])
+def predict_three_way_scenario(request: SimplifiedScenarioPredictionRequest):
+    """
+    Zero-Friction Scenario Prediction Gateway (Brainstorm Architecture).
+    
+    Accepts ONLY: Location, Crop Type, and Time Horizon (1 day to 10 years).
+    Queries the 25-Year Empirical Climatology Database (2000-2025) and generates
+    the 3-Way Quantile Forecast Triad (Normal, Drought, Flood) along with
+    the Empirical Probability Meter and Multi-Hazard Risk Indicators.
+    """
+    return scenario_engine.predict_scenario_triad(
+        location=request.location,
+        crop_type=request.crop_type,
+        time_horizon=request.time_horizon,
+        enso_phase=getattr(request, 'enso_phase', 'neutral') or 'neutral',
+        rare_event=request.rare_event,
+        irrigation_access_fraction=request.irrigation_access_fraction,
+        yield_disruption_fraction=request.yield_disruption_fraction,
+        event_evidence_note=request.event_evidence_note,
     )
 
 

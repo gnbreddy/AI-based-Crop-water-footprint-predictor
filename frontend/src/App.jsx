@@ -1,11 +1,14 @@
-import React, { useState, useEffect } from 'react';
+import React, { lazy, Suspense, useState, useEffect } from 'react';
 import Header from './components/Header';
 import SimulationForm from './components/SimulationForm';
 import CwfMetricsCard from './components/CwfMetricsCard';
-import FootprintChart from './components/FootprintChart';
-import GeospatialMap from './components/GeospatialMap';
-import AuditTable from './components/AuditTable';
 import { predictCwf, fetchAuditRecords } from './api/cwfApi';
+
+// Leaflet and charting libraries are relatively large; defer them until their
+// panels are rendered so the simulation controls become interactive sooner.
+const FootprintChart = lazy(() => import('./components/FootprintChart'));
+const GeospatialMap = lazy(() => import('./components/GeospatialMap'));
+const AuditTable = lazy(() => import('./components/AuditTable'));
 
 export default function App() {
   const [predictionResult, setPredictionResult] = useState(null);
@@ -78,22 +81,30 @@ export default function App() {
           {/* Right Column: Output Metrics, Chart & Map (5 cols) */}
           <div className="lg:col-span-5 space-y-6">
             <CwfMetricsCard result={predictionResult} />
-            {predictionResult && <FootprintChart result={predictionResult} />}
-            <GeospatialMap
-              latitude={mapCoords.lat}
-              longitude={mapCoords.lng}
-              label={mapCoords.label}
-              result={predictionResult}
-            />
+            {predictionResult && (
+              <Suspense fallback={<div className="rounded-xl border border-slate-800 bg-slate-900/70 p-6 text-sm text-slate-400">Loading footprint chart…</div>}>
+                <FootprintChart result={predictionResult} />
+              </Suspense>
+            )}
+            <Suspense fallback={<div className="rounded-xl border border-slate-800 bg-slate-900/70 p-6 text-sm text-slate-400">Loading map…</div>}>
+              <GeospatialMap
+                latitude={mapCoords.lat}
+                longitude={mapCoords.lng}
+                label={mapCoords.label}
+                result={predictionResult}
+              />
+            </Suspense>
           </div>
         </div>
 
         {/* Bottom Full-Width Table: Real-Time Audit Records */}
-        <AuditTable
-          records={auditRecords}
-          onRefresh={loadAuditRecords}
-          loading={recordsLoading}
-        />
+        <Suspense fallback={<div className="rounded-xl border border-slate-800 bg-slate-900/70 p-6 text-sm text-slate-400">Loading audit trail…</div>}>
+          <AuditTable
+            records={auditRecords}
+            onRefresh={loadAuditRecords}
+            loading={recordsLoading}
+          />
+        </Suspense>
       </main>
 
       <footer className="border-t border-slate-800/80 py-4 text-center text-xs text-slate-500 bg-slate-900/50">

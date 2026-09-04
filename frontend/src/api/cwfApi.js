@@ -34,3 +34,8 @@ export const predictCwf = async (payload) => {
   const response = await client.post('/api/v1/cwf/predict', payload);
   return response.data;
 };
+
+export const predictScenarioTriad = async (payload) => {
+  const response = await client.post('/api/v1/cwf/scenario-predict', payload);
+  return response.data;
+};

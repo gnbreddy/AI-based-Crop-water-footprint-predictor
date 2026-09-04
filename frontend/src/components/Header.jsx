@@ -58,7 +58,7 @@ export default function Header() {
         <div className="flex items-center space-x-1.5 px-3 py-1.5 rounded-lg bg-slate-800/80 border border-slate-700">
           <Cpu className="w-3.5 h-3.5 text-slate-400" />
           <span className="text-slate-300">
-            ML Model: <strong className={health?.ml_model_loaded ? 'text-teal-300' : 'text-slate-400'}>{health?.ml_model_loaded ? 'Active (98.6% R²)' : 'Offline'}</strong>
+            ML Model: <strong className={health?.ml_model_loaded ? 'text-teal-300' : 'text-slate-400'}>{health?.ml_model_loaded ? 'Active' : 'Offline'}</strong>
           </span>
         </div>
 

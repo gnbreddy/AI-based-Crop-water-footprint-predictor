@@ -347,7 +347,7 @@ if __name__ == "__main__":
     print("[Universal Engine] Testing Pydantic Typed Payload Ingestion...")
     
     sample_request = UniversalIngestionRequest(
-        location_label="Nile Delta, Egypt",
+        location_label="Karveer, Kolhapur",
         atmosphere=AtmosphericPayload(
             temp_c=36.0,
             solar_rad_mj=25.0,

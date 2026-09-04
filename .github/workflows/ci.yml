@@ -45,7 +45,7 @@ jobs:
         env:
           DATABASE_URL: postgresql://aquacrop_user:aquacrop_password@localhost:5432/aquacrop_db
         run: |
-          python -m pytest -v test_pipeline.py
+          python -m pytest -v tests/test_pipeline.py
 
   build-frontend:
     name: Frontend React Build & Assets Verification

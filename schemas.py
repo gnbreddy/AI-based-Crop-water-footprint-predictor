@@ -99,3 +99,75 @@ class UniversalPredictionResponse(BaseModel):
     crop_water_footprint_m3_ton: CropWaterFootprintOutput
     time_period_summary: Optional[TimePeriodDiagnostics] = None
     irrigation_stress_assessment: str
+
+# ==============================================================================
+# Simplified Zero-Friction Scenario Request & 3-Way Triad Response
+# ==============================================================================
+class SimplifiedScenarioPredictionRequest(BaseModel):
+    location: str = Field('kolhapur', description="Location/Taluka key (e.g. kolhapur, karveer, shirol, radhanagari, kagal, hatkanangale) or custom coordinate")
+    crop_type: str = Field('sugarcane', description="Crop species: sugarcane, cotton, wheat, rice")
+    time_horizon: str = Field(
+        '1_year',
+        description="Horizon: 1_day, 2_days, 3_days, 7_days, 2_weeks, 1_month, 3_months, 6_months, 1_year, 2_years, 3_years, 5_years, 10_years"
+    )
+    enso_phase: Optional[str] = Field('neutral', description="Macro-climate phase: neutral, el_nino (drought risk), la_nina (heavy monsoon)")
+    latitude: Optional[float] = Field(None, description="Optional custom latitude coordinate")
+    longitude: Optional[float] = Field(None, description="Optional custom longitude coordinate")
+    rare_event: Literal['none', 'pandemic_disruption'] = Field(
+        'none',
+        description="Optional non-climatic disruption scenario. Pandemic disruption is never inferred from weather or a year alone."
+    )
+    irrigation_access_fraction: Optional[float] = Field(
+        None, ge=0.0, le=1.0,
+        description="Evidence-backed fraction of normal irrigation access during a disruption; omitted means no supply reduction is assumed."
+    )
+    yield_disruption_fraction: Optional[float] = Field(
+        None, ge=0.0, le=0.90,
+        description="Evidence-backed fraction of normal yield lost due to a non-climatic disruption; omitted means no yield effect is assumed."
+    )
+    event_evidence_note: Optional[str] = Field(
+        None, max_length=500,
+        description="Optional source or field-observation note. It is returned for auditability and is not treated as model training data."
+    )
+
+class ScenarioMetrics(BaseModel):
+    scenario_label: str
+    cwf_green_m3_ton: float
+    cwf_blue_m3_ton: float
+    cwf_total_m3_ton: float
+    green_share_pct: float
+    blue_share_pct: float
+    period_etc_mm: float
+    period_precip_mm: float
+    actual_yield_ton_ha: float
+    yield_loss_pct: float
+    yield_loss_ton_ha: Optional[float] = 0.0
+    revenue_loss_inr_ha: Optional[float] = 0.0
+    kcb_transpiration: Optional[float] = None
+    ke_soil_evaporation: Optional[float] = None
+    effective_kc: Optional[float] = None
+    stomatal_attenuation_factor: Optional[float] = None
+    capillary_upflux_mm: Optional[float] = 0.0
+    vpd_kpa: float
+    soil_moisture_root: float
+
+class HazardAssessment(BaseModel):
+    drought_hazard_index_pct: int
+    flood_waterlogging_risk: str
+    irrigation_urgency: str
+    days_until_moisture_stress: int
+    blue_water_demand_surge_pct: Optional[float] = 0.0
+    actionable_advisory: str
+    marathi_advisory: Optional[str] = None
+
+class ThreeWayScenarioResponse(BaseModel):
+    status: str = "success"
+    query_context: dict
+    biophysical_diagnostics: Optional[dict] = None
+    probability_distribution: dict
+    scenarios: dict
+    hazard_assessment: dict
+    rare_event_assessment: Optional[dict] = None
+    # Cumulative, seasonally shaped green/blue trajectories used by the web chart.
+    # Kept as a dictionary so the API remains forward-compatible with new scenarios.
+    seasonal_trajectory: Optional[dict] = None

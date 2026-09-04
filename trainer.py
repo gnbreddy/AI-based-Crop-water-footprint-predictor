@@ -7,7 +7,8 @@ from sklearn.ensemble import IsolationForest
 from sklearn.metrics import mean_squared_error, r2_score, mean_absolute_error
 import pandas as pd
 import numpy as np
-from config import FEATURES, TARGET, PARAM_GRID, MAX_ACCURACY_PARAM_GRID, LOCAL_DATA_PATH
+from config import FEATURES, EXTENDED_FEATURES, TARGET, PARAM_GRID, MAX_ACCURACY_PARAM_GRID, LOCAL_DATA_PATH
+from model_io import save_lgbm_regressor
 
 def train_and_evaluate(clean_df, param_grid=None, deep_search=False, save_epoch_csvs=True, data_dir=LOCAL_DATA_PATH):
     """
@@ -29,8 +30,9 @@ def train_and_evaluate(clean_df, param_grid=None, deep_search=False, save_epoch_
     if param_grid is None:
         param_grid = MAX_ACCURACY_PARAM_GRID if deep_search else PARAM_GRID
 
-    active_features = [f for f in FEATURES if f in clean_df.columns]
+    active_features = [f for f in EXTENDED_FEATURES if f in clean_df.columns]
     print(f"[Trainer] Active features ({len(active_features)}): {active_features}")
+
     
     if TARGET not in clean_df.columns:
         raise ValueError(f"Target column '{TARGET}' not found in provided DataFrame.")
@@ -75,21 +77,29 @@ def train_and_evaluate(clean_df, param_grid=None, deep_search=False, save_epoch_
 
         # 3. Hyperparameter Search
         cv_folds = min(3, max(2, len(train_clean['year'].unique())))
-        if deep_search and len(param_grid.get('lgbm__n_estimators', [])) > 2:
+        if deep_search and len(param_grid.get('lgbm__n_estimators', [])) > 1:
             searcher = RandomizedSearchCV(
                 pipeline,
                 param_grid,
-                n_iter=16,
+                n_iter=8,
                 cv=cv_folds,
                 scoring='r2',
                 random_state=42,
-                n_jobs=1
+                n_jobs=-1
             )
         else:
-            searcher = GridSearchCV(pipeline, param_grid, cv=cv_folds, scoring='r2', n_jobs=1)
-
+            searcher = RandomizedSearchCV(
+                pipeline,
+                param_grid,
+                n_iter=4,
+                cv=cv_folds,
+                scoring='r2',
+                random_state=42,
+                n_jobs=-1
+            )
 
         searcher.fit(X_train, y_train)
+
 
         best_model = searcher.best_estimator_
         y_pred = best_model.predict(X_test)
@@ -193,10 +203,10 @@ def train_final_production_model(clean_df, data_dir=LOCAL_DATA_PATH):
     datasets without requiring further parameter tuning.
     """
     from config import OPTIMAL_LGBM_PARAMS, MODEL_SAVE_PATH, FINAL_MODEL_PATH
-    import joblib
 
-    active_features = [f for f in FEATURES if f in clean_df.columns]
+    active_features = [f for f in EXTENDED_FEATURES if f in clean_df.columns]
     print(f"\n[Trainer] Training Final Production Model on all {len(clean_df):,} records ({len(active_features)} features)...")
+
     print(f"[Trainer] Locked Hyperparameters: {OPTIMAL_LGBM_PARAMS}")
 
     # Isolation Forest on full dataset
@@ -248,9 +258,16 @@ def train_final_production_model(clean_df, data_dir=LOCAL_DATA_PATH):
     weights_csv_path = os.path.join(data_dir, "final_locked_feature_weights.csv")
     locked_weights_df.to_csv(weights_csv_path, index=False)
 
-    # Save to both best_lgbm_model.pkl and final_production_model.pkl
-    joblib.dump(pipeline, MODEL_SAVE_PATH)
-    joblib.dump(pipeline, FINAL_MODEL_PATH)
+    # Save the whole preprocessing-plus-LightGBM pipeline with its feature schema.
+    # The fit score below remains an in-sample diagnostic, not a validation claim.
+    artifact_metadata = {
+        'target': TARGET,
+        'training_records_after_outlier_filter': int(len(train_clean)),
+        'training_records_before_outlier_filter': int(len(clean_df)),
+        'fit_metrics_are_in_sample_only': True,
+    }
+    save_lgbm_regressor(pipeline, MODEL_SAVE_PATH, feature_names=active_features, metadata=artifact_metadata)
+    save_lgbm_regressor(pipeline, FINAL_MODEL_PATH, feature_names=active_features, metadata=artifact_metadata)
 
     print(f"[Trainer] Final Production Model Fit Complete:")
     print(f"  -> Global R² Accuracy: {acc_r2*100:.2f}% | Global RMSE: {rmse:.4f} mm | Global MAE: {mae:.4f} mm")

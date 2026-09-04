@@ -13,9 +13,9 @@ from config import (
 )
 from extractor import (
     authenticate_gee,
-    extract_6hourly_data_for_year,
-    download_6hourly_data_locally,
-    check_task_status
+    export_epoch_to_drive,
+    extract_epoch_directly_to_local,
+    check_task_statuses
 )
 from compiler import compile_datasets
 from trainer import train_and_evaluate, train_final_production_model
@@ -26,12 +26,10 @@ from visualizer import (
     plot_learning_curve,
     generate_footprint_map
 )
-from mock_data_generator import generate_mock_data
 
 def run_pipeline(
-    run_extract=False,
-    run_download_local=False,
-    run_mock=False,
+    run_extract_drive=False,
+    run_extract_direct=False,
     run_train=True,
     run_calibrate=True,
     run_visualize=True,
@@ -39,55 +37,50 @@ def run_pipeline(
     start_year=2000,
     end_year=2025,
     benchmark_twf=135.0,
-    region='all'
+    project_id=None
 ):
-    print("=" * 75)
-    print(" CROP WATER FOOTPRINT (CWF) MAXIMUM ACCURACY & EPOCH ENGINE")
-    print("=" * 75)
+    print("=" * 80)
+    print(" AQUACROP AI: AUTHENTIC GEE INGESTION & PRODUCTION TRAINING PIPELINE")
+    print("=" * 80)
 
-    target_regions = list(REGIONS.keys()) if region == 'all' else [region]
-    print(f"[Pipeline Scope] Target Regions ({len(target_regions)}): {target_regions}")
-
-    # 1A. Earth Engine Extraction to Google Drive (Batch Mode)
-    if run_extract:
-        print("\n[Stage 1A] Initializing Earth Engine Batch Tasks to Google Drive...")
-        if authenticate_gee():
-            for reg in target_regions:
-                print(f"  -> Dispatching GEE tasks for region: {reg}")
-                for yr in range(start_year, end_year + 1):
-                    extract_6hourly_data_for_year(yr, region=reg)
-            check_task_status()
+    # 1A. Earth Engine Extraction to Google Drive (Cloud Batch Mode)
+    if run_extract_drive:
+        print("\n[Stage 1A] Dispatching Earth Engine Cloud Batch Export Tasks to Google Drive...")
+        if authenticate_gee(project_id):
+            for yr in range(start_year, end_year + 1):
+                export_epoch_to_drive(yr)
+            check_task_statuses()
         else:
             print("[Stage 1A] GEE authentication skipped/failed.")
+            return
 
-    # 1B. Direct Local Earth Engine Download (Direct Local CSV Mode)
-    if run_download_local:
-        print("\n[Stage 1B] Initializing Direct Earth Engine Download to Local ./data Folder...")
-        if authenticate_gee():
-            for reg in target_regions:
-                print(f"  -> Downloading GEE data for region: {reg}")
-                for yr in range(start_year, end_year + 1):
-                    download_6hourly_data_locally(yr, region=reg)
+    # 1B. Direct Local Earth Engine Download (Direct Local Mode)
+    if run_extract_direct:
+        print(f"\n[Stage 1B] Streaming Authentic GEE Data Directly into {LOCAL_DATA_PATH}...")
+        if authenticate_gee(project_id):
+            for yr in range(start_year, end_year + 1):
+                extract_epoch_directly_to_local(yr)
         else:
             print("[Stage 1B] GEE authentication skipped/failed.")
+            return
 
-    # 2. Mock Data Generation (Optional / Offline Mode)
-    if run_mock:
-        print(f"\n[Stage 2] Generating Multi-Region Synthetic 6-Hourly Datasets ({start_year} -> {end_year})...")
-        generate_mock_data(start_year=start_year, end_year=end_year, regions=target_regions)
-
-    # 3. Data Ingestion & Feature Compilation
-
-    print("\n[Stage 3] Ingesting CSVs and Engineering Advanced Temporal Lag & Rolling Features...")
+    # 2. Data Ingestion & Feature Compilation
+    print("\n[Stage 2] Ingesting GEE Epoch Datasets & Engineering Non-Bleeding Lag Features...")
     df = compile_datasets(LOCAL_DATA_PATH)
     if df is None or df.empty:
-        print("[Error] No data available to proceed. Run with --mock to generate test data or --download-local for GEE data.")
+        print("[Notice] No compiled datasets found in data/.")
+        print("To extract authentic data from Google Earth Engine, run:")
+        print("  python extractor.py --mode direct --start-year 2000 --end-year 2025")
+        print("or dispatch Google Drive batch tasks with:")
+        print("  python extractor.py --mode drive --start-year 2000 --end-year 2025")
         return
 
+    print(f"[Stage 2] Master Dataset Ready: {len(df):,} records.")
+
     best_run = None
-    # 4. Model Training & Expanding Window Cross-Validation for Maximum Accuracy
+    # 3. Model Training & Expanding Window Cross-Validation
     if run_train:
-        print("\n[Stage 4A] Training LightGBM Across Walk-Forward Epochs (2000–2025)...")
+        print("\n[Stage 3A] Training LightGBM Across Walk-Forward Annual Epochs (2000–2025)...")
         best_run = train_and_evaluate(
             df,
             deep_search=deep_optimize,
@@ -95,27 +88,24 @@ def run_pipeline(
             data_dir=LOCAL_DATA_PATH
         )
 
-        print("\n[Stage 4B] Locking Final Production Weights on Complete Multi-Decade Dataset...")
+        print("\n[Stage 3B] Locking Final Production Weights on Master Multi-Decade Pool...")
         final_prod_run = train_final_production_model(df, data_dir=LOCAL_DATA_PATH)
         final_prod_run['full_history'] = best_run.get('full_history', [])
         best_run = final_prod_run
 
-    # 5. Crop Water Footprint (CWF) Physical Calibration & Estimation
+    # 4. Crop Water Footprint (CWF) Physical Calibration & Estimation
     cwf_results = None
     if run_calibrate:
-        print("\n[Stage 5] Computing and Calibrating Crop Water Footprint Coefficients...")
+        print("\n[Stage 4] Computing & Calibrating Crop Water Footprint Coefficients...")
         calibrator = CropWaterFootprintCalibrator()
         
-        # Use target ET and precipitation from compiled dataset
         et_series = df['modis_et_mm'].values
         precip_series = df['precip'].values
         
-        # Initial footprint computation
         cwf_initial = calibrator.compute_footprint(et_series, precip_series)
         print(f"  -> Initial Total Water Footprint: {cwf_initial['total_water_footprint_m3_ton']:.2f} m³/ton")
         print(f"     (Green: {cwf_initial['green_water_footprint_m3_ton']:.2f} m³/ton | Blue: {cwf_initial['blue_water_footprint_m3_ton']:.2f} m³/ton)")
 
-        # Empirical coefficient calibration against target benchmark
         calib_output = calibrator.calibrate_coefficients(
             et_series=et_series,
             precip_series=precip_series,
@@ -124,7 +114,6 @@ def run_pipeline(
         )
         cwf_results = calib_output['calibrated_footprint']
 
-        # Save calibrated water footprint timeseries to data folder
         cwf_ts_df = df[['datetime', 'year', 'month', 'day', 'hour']].copy() if 'datetime' in df.columns else pd.DataFrame()
         cwf_ts_df['et_actual_mm'] = et_series
         cwf_ts_df['et_crop_adjusted_mm'] = cwf_results['et_c_series']
@@ -134,11 +123,11 @@ def run_pipeline(
         
         cwf_ts_path = os.path.join(LOCAL_DATA_PATH, "calibrated_cwf_timeseries.csv")
         cwf_ts_df.to_csv(cwf_ts_path, index=False)
-        print(f"[Stage 5] Saved calibrated CWF timeseries dataset to: {cwf_ts_path}")
+        print(f"[Stage 4] Saved calibrated CWF timeseries dataset to: {cwf_ts_path}")
 
-    # 6. Visualizations and Spatial Map Generation
+    # 5. Visualizations & Spatial Map Generation
     if run_visualize:
-        print("\n[Stage 6] Generating Visual Analytics, Learning Curves, and Spatial Map...")
+        print("\n[Stage 5] Generating Visual Analytics & Model Diagnostics...")
         if best_run:
             plot_feature_importance(best_run)
             if 'full_history' in best_run:
@@ -150,60 +139,40 @@ def run_pipeline(
         target_map_year = best_run['predicted_year'] if best_run else HEATMAP_TARGET_YEAR
         generate_footprint_map(target_map_year)
 
-    print("\n" + "=" * 75)
-    print(" PIPELINE EXECUTION COMPLETE: ALL EPOCH CSVS & ARTIFACTS PERSISTED")
+    print("\n" + "=" * 80)
+    print(" PIPELINE EXECUTION COMPLETE")
     print(f" Data Directory:   {LOCAL_DATA_PATH}")
     print(f" Output Directory: {OUTPUT_DIR}")
-    print("=" * 75)
+    print("=" * 80)
 
 def main():
-    parser = argparse.ArgumentParser(description="Crop Water Footprint (CWF) Maximum Accuracy & Epoch Pipeline")
-    parser.add_argument("--mock", action="store_true", help="Generate synthetic 6-hourly datasets for testing")
-    parser.add_argument("--extract", action="store_true", help="Dispatch Earth Engine data extraction batch jobs to Google Drive")
-    parser.add_argument("--download-local", action="store_true", help="Download GEE data directly to local ./data CSV files")
+    parser = argparse.ArgumentParser(description="AquaCrop AI End-to-End Execution Pipeline")
+    parser.add_argument("--extract-drive", action="store_true", help="Dispatch GEE batch extraction tasks to Google Drive (folder: GEE_CWF_Data)")
+    parser.add_argument("--extract-direct", action="store_true", help="Directly stream authentic GEE data into local data/ directory")
     parser.add_argument("--train", action="store_true", help="Run LightGBM model training across walk-forward epochs")
-    parser.add_argument("--deep-optimize", action="store_true", default=True, help="Run deep search for maximum accuracy")
+    parser.add_argument("--deep-optimize", action="store_true", default=True, help="Run hyperparameter optimization")
     parser.add_argument("--calibrate", action="store_true", help="Run CWF physical coefficient calibration")
-    parser.add_argument("--visualize", action="store_true", help="Generate plots and interactive Folium maps")
-    parser.add_argument("--all", action="store_true", help="Run full end-to-end pipeline (mock/compile/train/calibrate/visualize)")
-    parser.add_argument("--start-year", type=int, default=2000, help="Starting year for data processing (default 2000)")
-    parser.add_argument("--end-year", type=int, default=2025, help="Ending year for data processing (default 2025)")
-    parser.add_argument("--region", type=str, default="all", choices=list(REGIONS.keys()) + ["all"],
-                        help="Target agricultural region: kolhapur, nile_delta, kansas, mekong_delta, or all")
+    parser.add_argument("--visualize", action="store_true", help="Generate analytics charts and maps")
+    parser.add_argument("--all", action="store_true", help="Run full pipeline")
+    parser.add_argument("--start-year", type=int, default=2000, help="Starting year for epochs (default: 2000)")
+    parser.add_argument("--end-year", type=int, default=2025, help="Ending year for epochs (default: 2025)")
+    parser.add_argument("--project", type=str, default=None, help="Google Cloud Project ID for Earth Engine")
     parser.add_argument("--benchmark-twf", type=float, default=135.0, help="Target total water footprint benchmark (m3/ton)")
 
     args = parser.parse_args()
 
-    # Default behavior if no specific flags passed
-    if args.all or not (args.mock or args.extract or args.download_local or args.train or args.calibrate or args.visualize):
-        run_pipeline(
-            run_extract=args.extract,
-            run_download_local=args.download_local,
-            run_mock=args.mock or not os.path.exists(LOCAL_DATA_PATH) or len([f for f in os.listdir(LOCAL_DATA_PATH) if f.endswith('.csv')]) == 0,
-            run_train=True,
-            run_calibrate=True,
-            run_visualize=True,
-            deep_optimize=True,
-            start_year=args.start_year,
-            end_year=args.end_year,
-            benchmark_twf=args.benchmark_twf,
-            region=args.region
-        )
-    else:
-        run_pipeline(
-            run_extract=args.extract,
-            run_download_local=args.download_local,
-            run_mock=args.mock,
-            run_train=args.train,
-            run_calibrate=args.calibrate,
-            run_visualize=args.visualize,
-            deep_optimize=args.deep_optimize,
-            start_year=args.start_year,
-            end_year=args.end_year,
-            benchmark_twf=args.benchmark_twf,
-            region=args.region
-        )
-
+    run_pipeline(
+        run_extract_drive=args.extract_drive,
+        run_extract_direct=args.extract_direct,
+        run_train=args.train or args.all,
+        run_calibrate=args.calibrate or args.all,
+        run_visualize=args.visualize or args.all,
+        deep_optimize=args.deep_optimize,
+        start_year=args.start_year,
+        end_year=args.end_year,
+        benchmark_twf=args.benchmark_twf,
+        project_id=args.project
+    )
 
 if __name__ == "__main__":
     main()

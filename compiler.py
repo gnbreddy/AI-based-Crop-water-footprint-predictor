@@ -2,19 +2,22 @@ import glob
 import os
 import pandas as pd
 import numpy as np
-from config import LOCAL_DATA_PATH, FEATURES, TARGET, BASE_FEATURES, LAG_FEATURES
+from config import LOCAL_DATA_PATH, FEATURES, TARGET, BASE_FEATURES, LAG_FEATURES, BIOPHYSICAL_FEATURES, EXTENDED_FEATURES, DATASET_REGIMES
 
 def compile_datasets(data_dir=LOCAL_DATA_PATH):
     """
-    Compiles individual annual 6-hourly CSV files across regions into a unified,
-    cleaned, chronologically sorted DataFrame with engineered lag and rolling features
-    computed independently per region.
+    Compiles individual annual CSV files across regions into a unified,
+    cleaned, chronologically sorted DataFrame with engineered biophysical,
+    lag, and rolling features computed independently per region.
     
     Returns:
         pd.DataFrame or None: Cleaned and structured DataFrame ready for ML modeling.
     """
-    pattern = os.path.join(data_dir, "cwf_6hourly_*.csv")
-    all_files = glob.glob(pattern)
+    # Discover all authentic epoch CSVs: cwf_kolhapur_*.csv, cwf_epoch_*.csv, and cwf_6hourly_*.csv
+    kolhapur_files = glob.glob(os.path.join(data_dir, "cwf_kolhapur_*.csv"))
+    epoch_files = glob.glob(os.path.join(data_dir, "cwf_epoch_*.csv"))
+    hourly_files = glob.glob(os.path.join(data_dir, "cwf_6hourly_*.csv"))
+    all_files = sorted(kolhapur_files if kolhapur_files else (epoch_files if epoch_files else hourly_files))
     
     if not all_files:
         master_file = os.path.join(data_dir, "master_engineered_dataset.csv")
@@ -23,13 +26,11 @@ def compile_datasets(data_dir=LOCAL_DATA_PATH):
             df = pd.read_csv(master_file)
             df['datetime'] = pd.to_datetime(df['datetime'])
             return df
-        print(f"[Compiler] No files found matching {pattern}.")
-        print("[Compiler] Please wait for GEE tasks to finish exporting and place CSVs into the local data directory, or run mock_data_generator.py.")
+        print(f"[Compiler] No GEE epoch files found in {data_dir}.")
+        print("[Compiler] Please extract data using: python extractor.py --start-year 2000 --end-year 2025")
         return None
 
-    # Filter out duplicate kolhapur files if both cwf_6hourly_<year>.csv and cwf_6hourly_kolhapur_<year>.csv exist
-    regional_files = [f for f in all_files if any(k in os.path.basename(f) for k in ['kolhapur', 'nile_delta', 'kansas', 'mekong_delta'])]
-    files_to_load = regional_files if len(regional_files) > 0 else all_files
+    files_to_load = all_files
 
     print(f"[Compiler] Found {len(files_to_load)} relevant CSV files. Ingesting...")
     df_list = []
@@ -40,11 +41,13 @@ def compile_datasets(data_dir=LOCAL_DATA_PATH):
             # Infer region from filename if not in columns
             if 'region' not in temp_df.columns:
                 inferred_region = 'kolhapur'
-                for reg in ['kolhapur', 'nile_delta', 'kansas', 'mekong_delta']:
+                for reg in ['kolhapur', 'karveer', 'shirol', 'radhanagari', 'kagal', 'hatkanangale']:
                     if reg in fname:
                         inferred_region = reg
                         break
-                temp_df['region'] = inferred_region
+            else:
+                inferred_region = temp_df['region'].iloc[0] if not temp_df.empty else 'kolhapur'
+            temp_df['region'] = inferred_region
             df_list.append(temp_df)
         except Exception as err:
             print(f"[Compiler] Warning: Could not read {f}: {err}")
@@ -53,21 +56,23 @@ def compile_datasets(data_dir=LOCAL_DATA_PATH):
         return None
 
     master_raw = pd.concat(df_list, ignore_index=True)
-    master_raw['datetime'] = pd.to_datetime(master_raw['datetime'])
+    master_raw['datetime'] = pd.to_datetime(master_raw['datetime'], errors='coerce')
+    master_raw = master_raw.dropna(subset=['datetime']).reset_index(drop=True)
+
     
     # Replace Earth Engine null/placeholder values (-9999) with NaN
     master_raw = master_raw.replace(-9999, np.nan)
     master_raw = master_raw.replace(-9999.0, np.nan)
     
-    # Deduplicate across region and datetime
-    if 'region' in master_raw.columns:
-        master_raw = master_raw.drop_duplicates(subset=['region', 'datetime']).reset_index(drop=True)
-    else:
-        master_raw = master_raw.drop_duplicates(subset=['datetime']).reset_index(drop=True)
+    # Keep simultaneous observations from separate monitoring stations. Using
+    # only region + datetime collapsed five Kolhapur nodes into one record.
+    identity_cols = ['region', 'station_node', 'datetime'] if 'station_node' in master_raw.columns else ['region', 'datetime']
+    master_raw = master_raw.drop_duplicates(subset=identity_cols).reset_index(drop=True)
 
-    # Process lag and rolling features partitioned by region
+    # Calculate temporal features independently per station, preventing lags
+    # from crossing station boundaries.
     regional_processed_dfs = []
-    regions = master_raw['region'].unique() if 'region' in master_raw.columns else ['kolhapur']
+    group_cols = ['region', 'station_node'] if 'station_node' in master_raw.columns else ['region']
     
     lag_mapping = {
         'temp_c_lag1': ('temp_c', 1),
@@ -78,9 +83,27 @@ def compile_datasets(data_dir=LOCAL_DATA_PATH):
         'soil_moisture_lag4': ('soil_moisture', 4)
     }
 
-    for reg in regions:
-        sub_df = master_raw[master_raw['region'] == reg].copy() if 'region' in master_raw.columns else master_raw.copy()
+    for _, station_df in master_raw.groupby(group_cols, sort=False):
+        sub_df = station_df.copy()
         sub_df = sub_df.sort_values(by='datetime').reset_index(drop=True)
+
+        # Standardize soil moisture column if multiple layer columns exist
+        if 'soil_moisture' not in sub_df.columns:
+            if 'soil_moisture_root' in sub_df.columns:
+                sub_df['soil_moisture'] = sub_df['soil_moisture_root']
+            elif 'soil_moisture_layer2' in sub_df.columns:
+                sub_df['soil_moisture'] = sub_df['soil_moisture_layer2']
+
+        # Preserve the independently observed MODIS ET target whenever present.
+        # The calculated crop-ET field is suitable only as a fallback; replacing
+        # MODIS ET with it makes validation measure a formula surrogate instead
+        # of unseen satellite observations.
+        if TARGET not in sub_df.columns or sub_df[TARGET].isna().all():
+            if 'et_crop_mm' in sub_df.columns and not sub_df['et_crop_mm'].isna().all():
+                sub_df[TARGET] = sub_df['et_crop_mm']
+            elif 'et0_fao56_mm' in sub_df.columns:
+                sub_df[TARGET] = sub_df['et0_fao56_mm'] * 0.50
+
 
         for col in BASE_FEATURES:
             if col in sub_df.columns:
@@ -106,12 +129,59 @@ def compile_datasets(data_dir=LOCAL_DATA_PATH):
         if 'precip' in sub_df.columns:
             sub_df['precip_cum48h'] = sub_df['precip'].rolling(window=8, min_periods=1).sum()
 
+        # ======================================================================
+        # BIOPHYSICAL & PLANT PHYSIOLOGY FEATURE ENGINEERING (Zero-Negative-Effect)
+        # ======================================================================
+        # 1. Growing Degree Days (GDD) with T_base = 12.0°C for sugarcane
+        t_base = 12.0
+        temp_col = sub_df['temp_c'] if 'temp_c' in sub_df.columns else pd.Series(25.0, index=sub_df.index)
+        sub_df['gdd_step'] = np.maximum(0.0, temp_col - t_base) * (3.0 / 24.0)
+        sub_df['year'] = sub_df['datetime'].dt.year
+        sub_df['gdd_cum'] = sub_df.groupby('year')['gdd_step'].cumsum()
+
+        # 2. Dynamic Root Depth Zr(t) expanding from 0.20m to 1.20m based on thermal time
+        sub_df['dynamic_root_depth'] = 0.20 + (1.20 - 0.20) * np.clip(sub_df['gdd_cum'] / 1800.0, 0.0, 1.0)
+
+        # 3. Dual Crop Coefficient (Kc = Kcb + Ke)
+        if 'ndvi' in sub_df.columns:
+            sub_df['kcb'] = np.clip(0.15 + 1.10 * (sub_df['ndvi'] - 0.15) / (0.75 - 0.15 + 1e-6), 0.15, 1.25)
+        else:
+            sub_df['kcb'] = 0.50
+
+        # Surface evaporation Ke driven by upper soil moisture layer
+        surf_sm = sub_df['soil_moisture_layer1'] if 'soil_moisture_layer1' in sub_df.columns else sub_df['soil_moisture']
+        sub_df['ke'] = np.clip(0.50 * surf_sm * (1.0 - sub_df['kcb'] / 1.4), 0.02, 0.80)
+        sub_df['kc_dual'] = np.clip(sub_df['kcb'] + sub_df['ke'], 0.15, 1.45)
+
+        # 4. Jarvis-Stewart Stomatal Closure Attenuation Factor (VPD > 2.2 kPa)
+        vpd_col = sub_df['vpd_kpa'] if 'vpd_kpa' in sub_df.columns else pd.Series(1.15, index=sub_df.index)
+        sub_df['f_vpd_attenuation'] = np.clip(1.0 - 0.35 * np.maximum(0.0, vpd_col - 2.2), 0.25, 1.0)
+
+        # 5. Flash Drought Atmospheric Thirst Index (VPD / Root Soil Moisture)
+        sm_root_col = sub_df['soil_moisture_root'] if 'soil_moisture_root' in sub_df.columns else sub_df['soil_moisture']
+        sub_df['flash_drought_idx'] = np.clip(vpd_col / (sm_root_col + 1e-4), 0.0, 50.0)
+
+        # 6. Waterlogging & Root Asphyxiation Flood Saturation Index
+        precip_48h = sub_df['precip_cum48h'] if 'precip_cum48h' in sub_df.columns else pd.Series(0.0, index=sub_df.index)
+        sub_df['flood_saturation_idx'] = np.clip((precip_48h / 40.0) * (sub_df['soil_moisture'] / 0.32), 0.0, 5.0)
+
         regional_processed_dfs.append(sub_df)
+
 
     master_df = pd.concat(regional_processed_dfs, ignore_index=True)
 
     # Cyclical temporal harmonics
     master_df['year'] = master_df['datetime'].dt.year
+    # Keep the observed target-distribution break visible to downstream audits.
+    # These labels deliberately do not assert that any societal event caused it.
+    master_df['dataset_regime'] = np.select(
+        [
+            master_df['year'].isin(DATASET_REGIMES['observed_target_regime_pre_2020']),
+            master_df['year'].isin(DATASET_REGIMES['observed_target_transition_2020']),
+        ],
+        ['observed_target_regime_pre_2020', 'observed_target_transition_2020'],
+        default='observed_target_regime_post_2020'
+    )
     master_df['month'] = master_df['datetime'].dt.month
     master_df['day'] = master_df['datetime'].dt.day
     master_df['hour'] = master_df['datetime'].dt.hour

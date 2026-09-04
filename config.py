@@ -1,5 +1,18 @@
 import os
 
+# Try loading .env file if present
+_env_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), '.env')
+if os.path.exists(_env_path):
+    try:
+        with open(_env_path, 'r') as _ef:
+            for _line in _ef:
+                _line = _line.strip()
+                if _line and not _line.startswith('#') and '=' in _line:
+                    _k, _v = _line.split('=', 1)
+                    os.environ.setdefault(_k.strip(), _v.strip())
+    except Exception:
+        pass
+
 # ==============================================================================
 # Google Earth Engine (GEE) Configuration
 # ==============================================================================
@@ -7,55 +20,82 @@ import os
 GEE_PROJECT_ID = os.getenv('GEE_PROJECT_ID', 'gen-lang-client-0784106715')
 ROI_COORDS = [73.40, 15.42, 74.42, 17.17]  # [min_lon, min_lat, max_lon, max_lat] default Kolhapur
 
+# Gemini AI API Key for Dynamic Agro-Hydrological Anatomy & Synthesis
+GEMINI_API_KEY = os.getenv('GEMINI_API_KEY', '')
+
 # Multi-Region Agro-Ecological Configurations for GEE & ML Ingestion
 REGIONS = {
     'kolhapur': {
-        'name': 'Kolhapur Sugarcane (India)',
+        'name': 'Kolhapur District Basin (India)',
         'crop': 'sugarcane',
         'soil': 'clay_loam',
         'roi_coords': [73.40, 15.42, 74.42, 17.17],
         'center': [16.70, 74.24],
         'elevation_m': 570.0,
         'kc': 0.50,
-        'yield_baseline': 150.0,
+        'yield_baseline': 105.0,
         'growing_season_days': 360,
-        'description': 'Tropical wet-and-dry monsoon sugarcane heartland of Western India.'
+        'description': 'Tropical wet-and-dry monsoon agro-basin of Western India.'
     },
-    'nile_delta': {
-        'name': 'Nile Delta Cotton (Egypt)',
+    'karveer': {
+        'name': 'Karveer Taluka (Central Panchganga Basin)',
+        'crop': 'sugarcane',
+        'soil': 'clay_loam',
+        'roi_coords': [74.15, 16.60, 74.35, 16.80],
+        'center': [16.7050, 74.2433],
+        'elevation_m': 565.0,
+        'kc': 0.50,
+        'yield_baseline': 105.0,
+        'growing_season_days': 360,
+        'description': 'Central riverine plain with intensive canal and lift irrigation.'
+    },
+    'shirol': {
+        'name': 'Shirol Taluka (Panchganga-Krishna Confluence)',
+        'crop': 'sugarcane',
+        'soil': 'alluvial_clay',
+        'roi_coords': [74.50, 16.60, 74.70, 16.80],
+        'center': [16.6917, 74.5833],
+        'elevation_m': 540.0,
+        'kc': 0.50,
+        'yield_baseline': 115.0,
+        'growing_season_days': 360,
+        'description': 'High water table alluvial floodplain with deep capillary upflux.'
+    },
+    'radhanagari': {
+        'name': 'Radhanagari Taluka (Western Ghats Catchment)',
+        'crop': 'rice',
+        'soil': 'lateritic_loam',
+        'roi_coords': [73.85, 16.30, 74.10, 16.55],
+        'center': [16.4167, 73.9833],
+        'elevation_m': 620.0,
+        'kc': 1.05,
+        'yield_baseline': 4.5,
+        'growing_season_days': 120,
+        'description': 'High-rainfall Western Ghats forest catchment zone.'
+    },
+    'kagal': {
+        'name': 'Kagal Taluka (Southern Agro-Corridor)',
+        'crop': 'sugarcane',
+        'soil': 'black_clay',
+        'roi_coords': [74.20, 16.50, 74.40, 16.68],
+        'center': [16.5833, 74.3167],
+        'elevation_m': 575.0,
+        'kc': 0.50,
+        'yield_baseline': 100.0,
+        'growing_season_days': 360,
+        'description': 'Heavy Vertisol clay soil agro-corridor.'
+    },
+    'hatkanangale': {
+        'name': 'Hatkanangale Taluka (Northern Belt)',
         'crop': 'cotton',
-        'soil': 'sandy_loam',
-        'roi_coords': [30.40, 30.50, 31.60, 31.50],
-        'center': [31.00, 31.00],
-        'elevation_m': 15.0,
+        'soil': 'black_clay_loam',
+        'roi_coords': [74.35, 16.65, 74.55, 16.85],
+        'center': [16.7417, 74.4444],
+        'elevation_m': 550.0,
         'kc': 0.85,
         'yield_baseline': 3.5,
         'growing_season_days': 180,
-        'description': 'Hyper-arid Mediterranean delta intensive irrigation cotton belt.'
-    },
-    'kansas': {
-        'name': 'Kansas Wheat (USA)',
-        'crop': 'wheat',
-        'soil': 'silt_loam',
-        'roi_coords': [-99.50, 37.80, -98.00, 39.00],
-        'center': [38.50, -98.50],
-        'elevation_m': 500.0,
-        'kc': 0.90,
-        'yield_baseline': 5.0,
-        'growing_season_days': 220,
-        'description': 'North American Great Plains temperate winter wheat grain belt.'
-    },
-    'mekong_delta': {
-        'name': 'Mekong Monsoon Rice (Vietnam)',
-        'crop': 'rice',
-        'soil': 'clay',
-        'roi_coords': [105.00, 9.80, 106.20, 10.80],
-        'center': [10.20, 105.80],
-        'elevation_m': 10.0,
-        'kc': 1.15,
-        'yield_baseline': 4.5,
-        'growing_season_days': 120,
-        'description': 'Tropical monsoon alluvial floodplain high-intensity paddy rice system.'
+        'description': 'Northern cash crop and sugarcane processing belt.'
     }
 }
 
@@ -121,8 +161,32 @@ CYCLICAL_FEATURES = [
 # Full feature set used by LightGBM model
 FEATURES = BASE_FEATURES + LAG_FEATURES + ROLLING_FEATURES + CYCLICAL_FEATURES
 
+# Advanced Biophysical & Plant Physiology Features (FAO-56 Dual Kc, GDD, Stomatal Resistance)
+BIOPHYSICAL_FEATURES = [
+    'gdd_cum',               # Cumulative Growing Degree Days (°C-days)
+    'dynamic_root_depth',    # Effective root zone depth Zr(t) in meters (0.2m - 1.2m)
+    'kcb',                   # Basal crop coefficient (transpiration, coupled to NDVI)
+    'ke',                    # Soil surface evaporation coefficient (rapid decay)
+    'kc_dual',               # Combined dual crop coefficient (Kcb + Ke)
+    'f_vpd_attenuation',     # Jarvis-Stewart stomatal closure attenuation factor [0.2 - 1.0]
+    'flash_drought_idx',     # Atmospheric thirst vs root moisture ratio (VPD / SM_root)
+    'flood_saturation_idx'   # Waterlogging and root asphyxiation index
+]
+
+# Extended feature set incorporating biophysical plant physiology
+EXTENDED_FEATURES = FEATURES + BIOPHYSICAL_FEATURES
+
 # Target variable (Evapotranspiration in mm from MODIS MOD16A2 / ground truth)
 TARGET = 'modis_et_mm'
+
+# Dataset regimes are provenance/quality labels, not causal claims.  The
+# chronological audit found a large target-distribution shift starting in 2020;
+# training and reports can use these labels to keep diagnostics transparent.
+DATASET_REGIMES = {
+    'observed_target_regime_pre_2020': range(2000, 2020),
+    'observed_target_transition_2020': range(2020, 2021),
+    'observed_target_regime_post_2020': range(2021, 2026),
+}
 
 # ==============================================================================
 # Unlocked Adaptive LightGBM Hyperparameters & Dynamic Search Distributions
