@@ -53,6 +53,8 @@ scratch/
 *.db-shm
 *.db-journal
 data/master_engineered_dataset.csv
+data/prediction_comparison_*.csv
+~$*
 
 # --- Node / Frontend Build Directories ---
 node_modules/

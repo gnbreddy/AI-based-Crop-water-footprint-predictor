@@ -161,6 +161,27 @@ def generate_footprint_map(target_year, save_path=None):
         popup=f"Study Area ROI [{min_lat}, {min_lon}] to [{max_lat}, {max_lon}]"
     ).add_to(m)
 
+    # Add authentic Kolhapur sub-taluka monitoring stations
+    from config import REGIONS
+    station_keys = ['karveer', 'shirol', 'radhanagari', 'kagal', 'hatkanangale']
+    for sk in station_keys:
+        st = REGIONS.get(sk)
+        if st:
+            lat, lon = st['center']
+            folium.Marker(
+                location=[lat, lon],
+                popup=folium.Popup(
+                    f"<b>{st['name']}</b><br>"
+                    f"Elevation: {st['elevation_m']}m<br>"
+                    f"Soil: {st['soil'].replace('_', ' ').title()}<br>"
+                    f"Primary Crop: {st['crop'].title()}<br>"
+                    f"<i>{st['description']}</i>",
+                    max_width=250
+                ),
+                tooltip=f"📍 {st['name']}",
+                icon=folium.Icon(color='green' if sk == 'karveer' else 'blue', icon='info-sign')
+            ).add_to(m)
+
     # Attempt to load GEE MODIS Green Water Footprint overlay
     try:
         roi = ee.Geometry.Rectangle(ROI_COORDS)

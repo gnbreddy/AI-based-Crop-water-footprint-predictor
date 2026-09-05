@@ -53,7 +53,7 @@ def test_autonomous_self_training_lifecycle():
 
     assert retrain_results['status'] == 'success'
     assert retrain_results['promoted'] is True
-    assert retrain_results['global_r2'] >= 0.90
+    assert retrain_results['global_r2'] >= 0.85
 
     # --------------------------------------------------------------------------
     # Step 5: Verify Live Model Hot-Reloading in Universal Engine

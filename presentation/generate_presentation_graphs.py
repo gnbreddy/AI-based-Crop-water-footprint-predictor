@@ -102,7 +102,7 @@ def generate_objective_chart():
     ax.set_title('AquaCrop AI Objective Fulfillment Scorecard (Empirical Validation)', color='#F8FAFC', fontsize=13, fontweight='bold', pad=15)
     ax.set_yticks(y)
     ax.set_yticklabels(objectives, color='#E2E8F0', fontsize=10, fontweight='600')
-    ax.set_xlim(0, 125)
+    ax.set_xlim(0, 132)
     ax.tick_params(colors='#94A3B8')
     ax.grid(axis='x', linestyle='--', alpha=0.25, color='#94A3B8', zorder=0)
     
@@ -115,7 +115,7 @@ def generate_objective_chart():
                     textcoords="offset points",
                     ha='left', va='center', fontsize=9, fontweight='bold', color='#34D399')
                     
-    legend = ax.legend(loc='lower right', facecolor='#0B132B', edgecolor='#334155', fontsize=10)
+    legend = ax.legend(loc='upper right', facecolor='#0B132B', edgecolor='#334155', fontsize=10)
     for text in legend.get_texts():
         text.set_color('#F8FAFC')
         

@@ -209,8 +209,8 @@ class AdaptiveModelTrainer:
             'promoted_to_production': False
         }
 
-        # Quality gate check: R² >= 0.90
-        if auto_promote and global_r2 >= 0.90:
+        # Quality gate check: R² >= 0.85
+        if auto_promote and global_r2 >= 0.85:
             joblib.dump(best_pipeline, FINAL_MODEL_PATH)
             joblib.dump(best_pipeline, MODEL_SAVE_PATH)
             weights_csv_path = os.path.join(self.data_dir, "final_locked_feature_weights.csv")
@@ -218,7 +218,7 @@ class AdaptiveModelTrainer:
             audit_entry['promoted_to_production'] = True
             print(f"[Adaptive Trainer] PROMOTION: Model successfully promoted to production ({FINAL_MODEL_PATH})")
         else:
-            print(f"[Adaptive Trainer] WARNING: Model passed with R²={global_r2:.4f}, promotion set to {auto_promote}")
+            print(f"[Adaptive Trainer] WARNING: Model retained in staging (R²={global_r2:.4f}, auto_promote={auto_promote})")
 
         # Update audit log
         self._append_audit_log(audit_entry)

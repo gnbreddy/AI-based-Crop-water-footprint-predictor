@@ -17,7 +17,7 @@
             <meta name="viewport" content="width=device-width,
                 initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
             <style>
-                #map_e2721449d7eb182ee271011594487f32 {
+                #map_533df9847819613e55372c5d18a70fef {
                     position: relative;
                     width: 100.0%;
                     height: 100.0%;
@@ -54,14 +54,14 @@
 <body>
     
     
-            <div class="folium-map" id="map_e2721449d7eb182ee271011594487f32" ></div>
+            <div class="folium-map" id="map_533df9847819613e55372c5d18a70fef" ></div>
         
 </body>
 <script>
     
     
-            var map_e2721449d7eb182ee271011594487f32 = L.map(
-                "map_e2721449d7eb182ee271011594487f32",
+            var map_533df9847819613e55372c5d18a70fef = L.map(
+                "map_533df9847819613e55372c5d18a70fef",
                 {
                     center: [16.7, 74.2],
                     crs: L.CRS.EPSG3857,
@@ -78,7 +78,7 @@
 
         
     
-            var tile_layer_a54e036dbab3e24397fe72c5ab926538 = L.tileLayer(
+            var tile_layer_a78f523feb2ab6f0079adb5e26d2c484 = L.tileLayer(
                 "https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png",
                 {
   "minZoom": 0,
@@ -95,48 +95,288 @@
             );
         
     
-            tile_layer_a54e036dbab3e24397fe72c5ab926538.addTo(map_e2721449d7eb182ee271011594487f32);
+            tile_layer_a78f523feb2ab6f0079adb5e26d2c484.addTo(map_533df9847819613e55372c5d18a70fef);
         
     
-            var rectangle_ba0ae7ab40bbcca49b235abb78e586d4 = L.rectangle(
+            var rectangle_6bc1383ca2d9962aac1a5a9092542b16 = L.rectangle(
                 [[15.42, 73.4], [17.17, 74.42]],
                 {"bubblingMouseEvents": true, "color": "#ff7800", "dashArray": null, "dashOffset": null, "fill": true, "fillColor": "#ff7800", "fillOpacity": 0.1, "fillRule": "evenodd", "lineCap": "round", "lineJoin": "round", "noClip": false, "opacity": 1.0, "smoothFactor": 1.0, "stroke": true, "weight": 2}
-            ).addTo(map_e2721449d7eb182ee271011594487f32);
+            ).addTo(map_533df9847819613e55372c5d18a70fef);
         
     
-        var popup_49952e76d5dd901ade6de55e917527cb = L.popup({
+        var popup_8f82a83150ad92face9d712557278057 = L.popup({
   "maxWidth": "100%",
 });
 
         
             
-                var html_41ab4836e726e58a730daf815c2208a8 = $(`<div id="html_41ab4836e726e58a730daf815c2208a8" style="width: 100.0%; height: 100.0%;">Study Area ROI [15.42, 73.4] to [17.17, 74.42]</div>`)[0];
-                popup_49952e76d5dd901ade6de55e917527cb.setContent(html_41ab4836e726e58a730daf815c2208a8);
+                var html_8aea28e42bea9575d4a903c6d8940323 = $(`<div id="html_8aea28e42bea9575d4a903c6d8940323" style="width: 100.0%; height: 100.0%;">Study Area ROI [15.42, 73.4] to [17.17, 74.42]</div>`)[0];
+                popup_8f82a83150ad92face9d712557278057.setContent(html_8aea28e42bea9575d4a903c6d8940323);
             
         
 
-        rectangle_ba0ae7ab40bbcca49b235abb78e586d4.bindPopup(popup_49952e76d5dd901ade6de55e917527cb)
+        rectangle_6bc1383ca2d9962aac1a5a9092542b16.bindPopup(popup_8f82a83150ad92face9d712557278057)
         ;
 
         
     
     
-            var layer_control_0d232d3bd07238d2bdd44e735e1518a2_layers = {
+            var marker_f5f7f1e45665779c15337226bbe7e4b4 = L.marker(
+                [16.705, 74.2433],
+                {
+}
+            ).addTo(map_533df9847819613e55372c5d18a70fef);
+        
+    
+            var icon_978a5dd288c85083af333e9ba0a67784 = L.AwesomeMarkers.icon(
+                {
+  "markerColor": "green",
+  "iconColor": "white",
+  "icon": "info-sign",
+  "prefix": "glyphicon",
+  "extraClasses": "fa-rotate-0",
+}
+            );
+        
+    
+        var popup_7d0caf4782601688d450ebe5053bc51f = L.popup({
+  "maxWidth": 250,
+});
+
+        
+            
+                var html_82a07cede5d8ec62f11601732aef2103 = $(`<div id="html_82a07cede5d8ec62f11601732aef2103" style="width: 100.0%; height: 100.0%;"><b>Karveer Taluka (Central Panchganga Basin)</b><br>Elevation: 565.0m<br>Soil: Clay Loam<br>Primary Crop: Sugarcane<br><i>Central riverine plain with intensive canal and lift irrigation.</i></div>`)[0];
+                popup_7d0caf4782601688d450ebe5053bc51f.setContent(html_82a07cede5d8ec62f11601732aef2103);
+            
+        
+
+        marker_f5f7f1e45665779c15337226bbe7e4b4.bindPopup(popup_7d0caf4782601688d450ebe5053bc51f)
+        ;
+
+        
+    
+    
+            marker_f5f7f1e45665779c15337226bbe7e4b4.bindTooltip(
+                `<div>
+                     📍 Karveer Taluka (Central Panchganga Basin)
+                 </div>`,
+                {
+  "sticky": true,
+}
+            );
+        
+    
+                marker_f5f7f1e45665779c15337226bbe7e4b4.setIcon(icon_978a5dd288c85083af333e9ba0a67784);
+            
+    
+            var marker_dea6856b7df520b51793d7826f5e558c = L.marker(
+                [16.6917, 74.5833],
+                {
+}
+            ).addTo(map_533df9847819613e55372c5d18a70fef);
+        
+    
+            var icon_a0d54581ff2a227f23106e1eeb58df77 = L.AwesomeMarkers.icon(
+                {
+  "markerColor": "blue",
+  "iconColor": "white",
+  "icon": "info-sign",
+  "prefix": "glyphicon",
+  "extraClasses": "fa-rotate-0",
+}
+            );
+        
+    
+        var popup_3ccd80bd58bf0c7646da2380a3e1a94d = L.popup({
+  "maxWidth": 250,
+});
+
+        
+            
+                var html_11c14135e9da5988d2fa79502b36e7f2 = $(`<div id="html_11c14135e9da5988d2fa79502b36e7f2" style="width: 100.0%; height: 100.0%;"><b>Shirol Taluka (Panchganga-Krishna Confluence)</b><br>Elevation: 540.0m<br>Soil: Alluvial Clay<br>Primary Crop: Sugarcane<br><i>High water table alluvial floodplain with deep capillary upflux.</i></div>`)[0];
+                popup_3ccd80bd58bf0c7646da2380a3e1a94d.setContent(html_11c14135e9da5988d2fa79502b36e7f2);
+            
+        
+
+        marker_dea6856b7df520b51793d7826f5e558c.bindPopup(popup_3ccd80bd58bf0c7646da2380a3e1a94d)
+        ;
+
+        
+    
+    
+            marker_dea6856b7df520b51793d7826f5e558c.bindTooltip(
+                `<div>
+                     📍 Shirol Taluka (Panchganga-Krishna Confluence)
+                 </div>`,
+                {
+  "sticky": true,
+}
+            );
+        
+    
+                marker_dea6856b7df520b51793d7826f5e558c.setIcon(icon_a0d54581ff2a227f23106e1eeb58df77);
+            
+    
+            var marker_5d6a4b1923af927ccc9730d06db23a22 = L.marker(
+                [16.4167, 73.9833],
+                {
+}
+            ).addTo(map_533df9847819613e55372c5d18a70fef);
+        
+    
+            var icon_08ff1a1319c8fa3f50283521716c178f = L.AwesomeMarkers.icon(
+                {
+  "markerColor": "blue",
+  "iconColor": "white",
+  "icon": "info-sign",
+  "prefix": "glyphicon",
+  "extraClasses": "fa-rotate-0",
+}
+            );
+        
+    
+        var popup_4e1084f7b99d57f40b9bf0d4ddb164f9 = L.popup({
+  "maxWidth": 250,
+});
+
+        
+            
+                var html_d234d735cef86c30023014569e42aa03 = $(`<div id="html_d234d735cef86c30023014569e42aa03" style="width: 100.0%; height: 100.0%;"><b>Radhanagari Taluka (Western Ghats Catchment)</b><br>Elevation: 620.0m<br>Soil: Lateritic Loam<br>Primary Crop: Rice<br><i>High-rainfall Western Ghats forest catchment zone.</i></div>`)[0];
+                popup_4e1084f7b99d57f40b9bf0d4ddb164f9.setContent(html_d234d735cef86c30023014569e42aa03);
+            
+        
+
+        marker_5d6a4b1923af927ccc9730d06db23a22.bindPopup(popup_4e1084f7b99d57f40b9bf0d4ddb164f9)
+        ;
+
+        
+    
+    
+            marker_5d6a4b1923af927ccc9730d06db23a22.bindTooltip(
+                `<div>
+                     📍 Radhanagari Taluka (Western Ghats Catchment)
+                 </div>`,
+                {
+  "sticky": true,
+}
+            );
+        
+    
+                marker_5d6a4b1923af927ccc9730d06db23a22.setIcon(icon_08ff1a1319c8fa3f50283521716c178f);
+            
+    
+            var marker_38bcc294b7d0a2cc08f94c741c056060 = L.marker(
+                [16.5833, 74.3167],
+                {
+}
+            ).addTo(map_533df9847819613e55372c5d18a70fef);
+        
+    
+            var icon_646a41b197b5417eaaca0f18f29425ad = L.AwesomeMarkers.icon(
+                {
+  "markerColor": "blue",
+  "iconColor": "white",
+  "icon": "info-sign",
+  "prefix": "glyphicon",
+  "extraClasses": "fa-rotate-0",
+}
+            );
+        
+    
+        var popup_283b4b16b23ef05c9e8f6409b8f472b1 = L.popup({
+  "maxWidth": 250,
+});
+
+        
+            
+                var html_7fe3f871f91d1b9b79947dd02a93864d = $(`<div id="html_7fe3f871f91d1b9b79947dd02a93864d" style="width: 100.0%; height: 100.0%;"><b>Kagal Taluka (Southern Agro-Corridor)</b><br>Elevation: 575.0m<br>Soil: Black Clay<br>Primary Crop: Sugarcane<br><i>Heavy Vertisol clay soil agro-corridor.</i></div>`)[0];
+                popup_283b4b16b23ef05c9e8f6409b8f472b1.setContent(html_7fe3f871f91d1b9b79947dd02a93864d);
+            
+        
+
+        marker_38bcc294b7d0a2cc08f94c741c056060.bindPopup(popup_283b4b16b23ef05c9e8f6409b8f472b1)
+        ;
+
+        
+    
+    
+            marker_38bcc294b7d0a2cc08f94c741c056060.bindTooltip(
+                `<div>
+                     📍 Kagal Taluka (Southern Agro-Corridor)
+                 </div>`,
+                {
+  "sticky": true,
+}
+            );
+        
+    
+                marker_38bcc294b7d0a2cc08f94c741c056060.setIcon(icon_646a41b197b5417eaaca0f18f29425ad);
+            
+    
+            var marker_a62c6366a57c1903dafa464225abf1e4 = L.marker(
+                [16.7417, 74.4444],
+                {
+}
+            ).addTo(map_533df9847819613e55372c5d18a70fef);
+        
+    
+            var icon_08603398751ed13313212478b9184a44 = L.AwesomeMarkers.icon(
+                {
+  "markerColor": "blue",
+  "iconColor": "white",
+  "icon": "info-sign",
+  "prefix": "glyphicon",
+  "extraClasses": "fa-rotate-0",
+}
+            );
+        
+    
+        var popup_ee7649852e6bc72953d1ed25016f15a4 = L.popup({
+  "maxWidth": 250,
+});
+
+        
+            
+                var html_8a3eb3cab4386776a14b50e5a628e726 = $(`<div id="html_8a3eb3cab4386776a14b50e5a628e726" style="width: 100.0%; height: 100.0%;"><b>Hatkanangale Taluka (Northern Belt)</b><br>Elevation: 550.0m<br>Soil: Black Clay Loam<br>Primary Crop: Cotton<br><i>Northern cash crop and sugarcane processing belt.</i></div>`)[0];
+                popup_ee7649852e6bc72953d1ed25016f15a4.setContent(html_8a3eb3cab4386776a14b50e5a628e726);
+            
+        
+
+        marker_a62c6366a57c1903dafa464225abf1e4.bindPopup(popup_ee7649852e6bc72953d1ed25016f15a4)
+        ;
+
+        
+    
+    
+            marker_a62c6366a57c1903dafa464225abf1e4.bindTooltip(
+                `<div>
+                     📍 Hatkanangale Taluka (Northern Belt)
+                 </div>`,
+                {
+  "sticky": true,
+}
+            );
+        
+    
+                marker_a62c6366a57c1903dafa464225abf1e4.setIcon(icon_08603398751ed13313212478b9184a44);
+            
+    
+            var layer_control_a3f5cce42210677615d8f2b160f7c247_layers = {
                 base_layers : {
-                    "cartodbpositron" : tile_layer_a54e036dbab3e24397fe72c5ab926538,
+                    "cartodbpositron" : tile_layer_a78f523feb2ab6f0079adb5e26d2c484,
                 },
                 overlays :  {
                 },
             };
-            let layer_control_0d232d3bd07238d2bdd44e735e1518a2 = L.control.layers(
-                layer_control_0d232d3bd07238d2bdd44e735e1518a2_layers.base_layers,
-                layer_control_0d232d3bd07238d2bdd44e735e1518a2_layers.overlays,
+            let layer_control_a3f5cce42210677615d8f2b160f7c247 = L.control.layers(
+                layer_control_a3f5cce42210677615d8f2b160f7c247_layers.base_layers,
+                layer_control_a3f5cce42210677615d8f2b160f7c247_layers.overlays,
                 {
   "position": "topright",
   "collapsed": true,
   "autoZIndex": true,
 }
-            ).addTo(map_e2721449d7eb182ee271011594487f32);
+            ).addTo(map_533df9847819613e55372c5d18a70fef);
 
         
 </script>
